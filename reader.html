@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>漫画阅读器 | MangaReader</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Microsoft YaHei', Arial, sans-serif; background-color: #1a1a1a; color: #fff; overflow: hidden; height: 100vh; touch-action: manipulation; overscroll-behavior: none; }
+        .reader-toolbar { background-color: rgba(30,30,30,0.95); padding: 10px 20px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #333; z-index:1000; transition: opacity .3s, transform .3s; position:absolute; top:0; left:0; right:0; backdrop-filter: blur(10px); }
+        .toolbar-left { display:flex; align-items:center; gap:15px; }
+        .back-btn { background:none; border:none; color:#fff; font-size:16px; cursor:pointer; padding:8px 12px; border-radius:6px; transition: all .2s; }
+        .back-btn:hover { background:#444; transform:scale(.97); }
+        .manga-info { display:flex; flex-direction:column; }
+        .manga-title { font-size:16px; font-weight:700; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .chapter-title { font-size:14px; color:#aaa; }
+        .toolbar-right { display:flex; align-items:center; gap:12px; }
+        .setting-btn { background:none; border:1px solid #555; color:#fff; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:12px; }
+        .reader-container { display:flex; height:100vh; position:relative; padding-top:60px; padding-bottom:50px; }
+        .left-zone, .center-zone, .right-zone { position:absolute; top:60px; height:calc(100% - 110px); width:33.33%; z-index:110; cursor:pointer; }
+        .left-zone { left:0; }
+        .right-zone { right:0; }
+        .center-zone { left:33.33%; }
+        .reader-content { flex:1; display:flex; justify-content:center; align-items:center; position:relative; overflow:hidden; transition: all .3s; }
+        .flip-container { position:relative; width:100%; height:100%; display:flex; justify-content:center; align-items:center; }
+        .flip-page { position:absolute; width:100%; height:100%; display:flex; justify-content:center; align-items:center; overflow:hidden; will-change: transform, opacity; }
+        .flip-page .page-inner { width:100%; height:100%; display:flex; justify-content:center; align-items:center; }
+        .flip-page .page-image { max-width:100%; max-height:100%; object-fit:contain; user-select:none; cursor:grab; transform-origin:center center; }
+        .flip-page.current { transform: translateX(0); opacity:1; z-index:20; transition: transform .45s cubic-bezier(.22,.9,.2,1), opacity .35s ease; }
+        .flip-page.incoming { z-index:25; transition: transform .45s cubic-bezier(.22,.9,.2,1), opacity .3s ease; }
+        .flip-page.incoming.from-right { transform: translateX(100%); }
+        .flip-page.incoming.from-left { transform: translateX(-100%); }
+        .flip-page.incoming.enter { transform: translateX(0); opacity:1; }
+        .flip-page.current.exit-left { transform: translateX(-100%); opacity:0; }
+        .flip-page.current.exit-right { transform: translateX(100%); opacity:0; }
+        .skeleton-wrapper { width:80%; height:80%; display:flex; align-items:center; justify-content:center; }
+        .skeleton-loader { background: linear-gradient(90deg, #333 25%, #444 50%, #333 75%); background-size:200% 100%; animation: skeleton-loading 1.2s infinite; width:100%; height:100%; border-radius:8px; }
+        @keyframes skeleton-loading { 0% { background-position:200% 0; } 100%{ background-position:-200% 0; } }
+        .reader-footer { position:absolute; bottom:0; left:0; right:0; background-color: rgba(30,30,30,0.95); padding:10px 20px; display:flex; justify-content:space-between; align-items:center; border-top:1px solid #333; z-index:1000; backdrop-filter: blur(10px); }
+        .page-counter { font-size:14px; color:#aaa; min-width:60px; }
+        .progress-bar { flex:1; margin:0 20px; height:6px; background:#444; border-radius:3px; overflow:hidden; cursor:pointer; }
+        .progress-fill { height:100%; background:linear-gradient(90deg,#ff6b6b,#ff8e8e); width:0%; transition: width .3s ease; }
+        .settings-panel { position:absolute; top:70px; right:20px; background:rgba(40,40,40,0.95); border:1px solid #555; border-radius:12px; padding:20px; width:280px; z-index:1001; display:none; backdrop-filter: blur(15px); }
+        .zoom-controls { position:absolute; right:20px; top:50%; transform:translateY(-50%); display:flex; flex-direction:column; gap:12px; z-index:1000; display:none; }
+        .zoom-btn { width:48px; height:48px; border-radius:50%; background:rgba(40,40,40,0.9); border:2px solid #555; color:#fff; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:20px; }
+        .toast { position:fixed; bottom:100px; left:50%; transform:translateX(-50%) translateY(100px); background:rgba(40,40,40,0.95); color:#fff; padding:12px 24px; border-radius:25px; z-index:2000; opacity:0; transition: all .3s ease; border:1px solid #555; pointer-events:none; }
+        .toast-show { opacity:1; transform:translateX(-50%) translateY(0); }
+        .ui-hidden .reader-toolbar, .ui-hidden .reader-footer, .ui-hidden .zoom-controls, .ui-hidden .settings-panel { opacity:0; pointer-events:none; visibility:hidden; }
+        .ui-hidden .reader-toolbar { transform: translateY(-100%); }
+        .ui-hidden .reader-footer { transform: translateY(100%); }
+        .error-message { display:none; }
+        .double-page-container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+        .double-page-left, .double-page-right {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+        }
+        .double-page-left .page-image, .double-page-right .page-image {
+            max-height: 100%;
+            max-width: 100%;
+            object-fit: contain;
+        }
+        @media (max-width: 768px) {
+            .toolbar-left {
+                gap: 8px;
+            }
+            .manga-info {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .manga-title {
+                max-width: 150px;
+                font-size: 14px;
+            }
+            .chapter-title {
+                font-size: 12px;
+            }
+            .back-btn {
+                padding: 6px 10px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="reader-toolbar">
+        <div class="toolbar-left">
+            <button class="back-btn" onclick="goBack()">← 返回</button>
+            <div class="manga-info">
+                <div class="manga-title" id="mangaTitle">加载中...</div>
+                <div class="chapter-title" id="chapterTitle">第一章</div>
+            </div>
+        </div>
+        <div class="toolbar-right">
+            <div class="reader-settings">
+                <button class="setting-btn" onclick="toggleSettings()">⚙️ 设置</button>
+                <button class="setting-btn" onclick="toggleFullscreen()">⛶ 全屏</button>
+            </div>
+        </div>
+    </div>
+    <div class="settings-panel" id="settingsPanel">
+        <h3>阅读设置</h3>
+        <div class="setting-item">
+            <label for="readingMode">阅读模式</label>
+            <select id="readingMode" onchange="changeReadingMode()">
+                <option value="single">单页模式</option>
+                <option value="double">双页模式</option>
+                <option value="scroll">滚动模式</option>
+            </select>
+        </div>
+        <div class="setting-item">
+            <label for="readingDirection">阅读方向</label>
+            <select id="readingDirection" onchange="changeReadingDirection()">
+                <option value="ltr">从左到右</option>
+                <option value="rtl" selected>从右到左</option>
+            </select>
+        </div>
+        <div class="setting-item">
+            <label for="zoomLevel">缩放级别</label>
+            <select id="zoomLevel" onchange="changeZoomLevel()">
+                <option value="auto">自动适应</option>
+                <option value="width">适应宽度</option>
+                <option value="height">适应高度</option>
+                <option value="original">原始尺寸</option>
+            </select>
+        </div>
+        <div class="setting-item">
+            <label for="theme">主题颜色</label>
+            <select id="theme" onchange="changeTheme()">
+                <option value="dark">深色模式</option>
+                <option value="light">浅色模式</option>
+            </select>
+        </div>
+    </div>
+    <div class="reader-container">
+        <div class="left-zone" onclick="prevPage()"></div>
+        <div class="center-zone" onclick="toggleUI()"></div>
+        <div class="right-zone" onclick="nextPage()"></div>
+        <div class="reader-content" id="readerContent">
+            <div class="flip-container" id="flipContainer">
+                <div class="loading" id="loading">
+                    <span>正在加载漫画...</span>
+                </div>
+                <div class="error-message" id="errorMessage">
+                    <h3>加载失败</h3>
+                    <p id="errorText">无法加载漫画内容</p>
+                    <button onclick="retryLoad()">重试</button>
+                    <button onclick="goBack()">返回首页</button>
+                </div>
+            </div>
+        </div>
+        <div class="zoom-controls" id="zoomControls">
+            <button class="zoom-btn" onclick="zoomIn()">+</button>
+            <button class="zoom-btn" onclick="zoomOut()">-</button>
+            <button class="zoom-btn" onclick="resetZoom()">⟲</button>
+        </div>
+    </div>
+    <div class="reader-footer">
+        <div class="page-counter" id="pageCounter">0 / 0</div>
+        <div class="progress-bar" onclick="jumpToPage(event)">
+            <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="page-counter" id="pageNum">第 0 页</div>
+    </div>
+    <div class="toast" id="toast"></div>
+    <script>
+        // Cookie utility functions
+        function setCookie(name, value, days) {
+            const expires = new Date();
+            expires.setTime(expires.getTime() + (days * 24 * 60 * 60 * 1000));
+            document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+        }
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+            }
+            return null;
+        }
+
+        const readerState = {
+            mangaId: null,
+            chapterId: null,
+            chapters: [],
+            currentPage: 0,
+            totalPages: 0,
+            pages: [],
+            isFullscreen: false,
+            isUIHidden: false,
+            zoomLevel: 1,
+            maxZoom: 3,
+            minZoom: 0.5,
+            readingMode: 'single',
+            readingDirection: 'rtl',
+            theme: 'dark',
+            isAnimating: false,
+            isLoadingNextChapter: false
+        };
+
+        const pageQueue = [];
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            readerState.mangaId = urlParams.get('manga');
+            readerState.chapterId = urlParams.get('chapter');
+            if (!readerState.mangaId) {
+                showError('缺少漫画ID参数');
+                return;
+            }
+            loadMangaData();
+            document.addEventListener('keydown', handleKeyboard);
+            setupTouchEvents();
+        });
+
+        async function loadMangaData() {
+            try {
+                showLoading(true);
+                const mangaResponse = await fetch(`/api/manga/${readerState.mangaId}`);
+                if (!mangaResponse.ok) throw new Error('漫画信息获取失败');
+                const mangaData = await mangaResponse.json();
+                document.getElementById('mangaTitle').textContent = mangaData.title || '未命名';
+
+                const chaptersResponse = await fetch(`/api/manga/${readerState.mangaId}/chapters`);
+                if (!chaptersResponse.ok) throw new Error('章节列表获取失败');
+                readerState.chapters = await chaptersResponse.json();
+                if (readerState.chapters.length === 0) {
+                    throw new Error('该漫画暂无章节');
+                }
+
+                let targetChapter = null;
+                if (readerState.chapterId) {
+                    targetChapter = readerState.chapters.find(ch => ch.id === readerState.chapterId);
+                }
+                if (!targetChapter) {
+                    targetChapter = readerState.chapters.reduce((prev, current) => {
+                        return (prev.number > current.number) ? prev : current;
+                    });
+                }
+                readerState.chapterId = targetChapter.id;
+                document.getElementById('chapterTitle').textContent = `第${targetChapter.number}话: ${targetChapter.title}`;
+
+                await loadChapterData(targetChapter.id);
+                showLoading(false);
+            } catch (err) {
+                console.error('加载漫画失败:', err);
+                showError('加载漫画失败: ' + err.message);
+                showLoading(false);
+            }
+        }
+
+        async function loadChapterData(chapterId) {
+            try {
+                const listResponse = await fetch(`/api/manga/${readerState.mangaId}/chapters/${chapterId}/files`);
+                if (!listResponse.ok) throw new Error('章节文件列表获取失败');
+                const { files } = await listResponse.json();
+                readerState.pages = files;
+                readerState.totalPages = files.length;
+
+               // 替换 loadChapterData 中的进度加载部分
+                const urlParams = new URLSearchParams(window.location.search);
+                let initialPage = parseInt(urlParams.get('page') || '1', 10) - 1; // 1-based → 0-based
+
+            if (isNaN(initialPage) || initialPage < 0 || initialPage >= readerState.totalPages) {
+         const savedProgress = loadReadingProgress();
+    if (savedProgress !== null && savedProgress < readerState.totalPages) {
+        initialPage = savedProgress;
+    } else {
+        initialPage = 0;
+    }
+}
+readerState.currentPage = initialPage;
+
+                if (readerState.readingMode === 'scroll') {
+                    renderScrollMode();
+                } else if (readerState.readingMode === 'double') {
+                    renderDoublePage(readerState.currentPage);
+                } else {
+                    renderInstantPage(readerState.currentPage);
+                }
+                updateProgress();
+            } catch (err) {
+                throw new Error('加载章节内容失败: ' + err.message);
+            }
+        }
+
+        function getImageUrl(pageIndex) {
+            if (pageIndex < 0 || pageIndex >= readerState.pages.length) {
+                return null;
+            }
+            const rawFileName = readerState.pages[pageIndex];
+            const encodedFileName = encodeURIComponent(rawFileName);
+            return `/api/manga/${readerState.mangaId}/chapters/${readerState.chapterId}/image/${encodedFileName}`;
+        }
+
+        function createPageElement(pageIndex) {
+            const page = document.createElement('div');
+            page.className = 'flip-page';
+            page.dataset.index = pageIndex;
+            const inner = document.createElement('div');
+            inner.className = 'page-inner';
+            const skeletonWrap = document.createElement('div');
+            skeletonWrap.className = 'skeleton-wrapper';
+            const skeleton = document.createElement('div');
+            skeleton.className = 'skeleton-loader';
+            skeletonWrap.appendChild(skeleton);
+            inner.appendChild(skeletonWrap);
+            const img = document.createElement('img');
+            img.className = 'page-image';
+            img.draggable = false;
+            img.alt = `第${pageIndex+1}页`;
+            img.style.display = 'none';
+            const imageUrl = getImageUrl(pageIndex);
+            if (imageUrl) {
+                img.src = imageUrl;
+                img.onload = function() {
+                    skeletonWrap.remove();
+                    img.style.display = 'block';
+                    setupImageDrag(img);
+                };
+                img.onerror = function() {
+                    skeletonWrap.remove();
+                    const err = document.createElement('div');
+                    err.textContent = '图片加载失败';
+                    err.style.color = '#e74c3c';
+                    inner.appendChild(err);
+                };
+            } else {
+                skeletonWrap.remove();
+                const err = document.createElement('div');
+                err.textContent = '页面不存在';
+                err.style.color = '#e74c3c';
+                inner.appendChild(err);
+            }
+            inner.appendChild(img);
+            page.appendChild(inner);
+            return page;
+        }
+
+        function createDoublePageElement(leftIndex, rightIndex) {
+            const container = document.createElement('div');
+            container.className = 'double-page-container';
+            const leftWrapper = document.createElement('div');
+            leftWrapper.className = 'double-page-left';
+            if (leftIndex !== null) {
+                const leftImg = document.createElement('img');
+                leftImg.className = 'page-image';
+                leftImg.draggable = false;
+                leftImg.alt = `第${leftIndex+1}页`;
+                leftImg.style.display = 'none';
+                const leftUrl = getImageUrl(leftIndex);
+                if (leftUrl) {
+                    leftImg.src = leftUrl;
+                    leftImg.onload = function() {
+                        leftImg.style.display = 'block';
+                        setupImageDrag(leftImg);
+                    };
+                    leftImg.onerror = function() {
+                        const err = document.createElement('div');
+                        err.textContent = '左页加载失败';
+                        err.style.color = '#e74c3c';
+                        leftWrapper.appendChild(err);
+                    };
+                } else {
+                    const err = document.createElement('div');
+                    err.textContent = '左页不存在';
+                    err.style.color = '#e74c3c';
+                    leftWrapper.appendChild(err);
+                }
+                leftWrapper.appendChild(leftImg);
+            } else {
+                leftWrapper.style.visibility = 'hidden';
+            }
+            const rightWrapper = document.createElement('div');
+            rightWrapper.className = 'double-page-right';
+            if (rightIndex !== null) {
+                const rightImg = document.createElement('img');
+                rightImg.className = 'page-image';
+                rightImg.draggable = false;
+                rightImg.alt = `第${rightIndex+1}页`;
+                rightImg.style.display = 'none';
+                const rightUrl = getImageUrl(rightIndex);
+                if (rightUrl) {
+                    rightImg.src = rightUrl;
+                    rightImg.onload = function() {
+                        rightImg.style.display = 'block';
+                        setupImageDrag(rightImg);
+                    };
+                    rightImg.onerror = function() {
+                        const err = document.createElement('div');
+                        err.textContent = '右页加载失败';
+                        err.style.color = '#e74c3c';
+                        rightWrapper.appendChild(err);
+                    };
+                } else {
+                    const err = document.createElement('div');
+                    err.textContent = '右页不存在';
+                    err.style.color = '#e74c3c';
+                    rightWrapper.appendChild(err);
+                }
+                rightWrapper.appendChild(rightImg);
+            } else {
+                rightWrapper.style.visibility = 'hidden';
+            }
+            container.appendChild(leftWrapper);
+            container.appendChild(rightWrapper);
+            return container;
+        }
+
+        function renderInstantPage(pageIndex) {
+            const flipContainer = document.getElementById('flipContainer');
+            flipContainer.innerHTML = '';
+            flipContainer.style.overflowY = 'hidden';
+            const page = createPageElement(pageIndex);
+            page.classList.add('current');
+            flipContainer.appendChild(page);
+            readerState.currentPage = pageIndex;
+            updateProgress();
+            if (pageIndex + 1 < readerState.totalPages) {
+                const nextImg = new Image();
+                nextImg.src = getImageUrl(pageIndex + 1);
+            }
+            if (pageIndex - 1 >= 0) {
+                const prevImg = new Image();
+                prevImg.src = getImageUrl(pageIndex - 1);
+            }
+        }
+
+        function renderDoublePage(startIndex) {
+            const flipContainer = document.getElementById('flipContainer');
+            flipContainer.innerHTML = '';
+            flipContainer.style.overflowY = 'hidden';
+            let leftIndex, rightIndex;
+            if (readerState.readingDirection === 'rtl') {
+                rightIndex = startIndex;
+                leftIndex = startIndex + 1 < readerState.totalPages ? startIndex + 1 : null;
+            } else {
+                leftIndex = startIndex;
+                rightIndex = startIndex + 1 < readerState.totalPages ? startIndex + 1 : null;
+            }
+            const doublePage = createDoublePageElement(leftIndex, rightIndex);
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flip-page current';
+            wrapper.style.display = 'flex';
+            wrapper.appendChild(doublePage);
+            flipContainer.appendChild(wrapper);
+            readerState.currentPage = startIndex;
+            updateProgress();
+            if (leftIndex !== null && leftIndex + 2 < readerState.totalPages) {
+                const nextRightImg = new Image();
+                nextRightImg.src = getImageUrl(leftIndex + 2);
+            }
+            if (rightIndex !== null && rightIndex + 2 < readerState.totalPages) {
+                const nextRightImg = new Image();
+                nextRightImg.src = getImageUrl(rightIndex + 2);
+            }
+            if (startIndex - 2 >= 0) {
+                const prevLeftImg = new Image();
+                prevLeftImg.src = getImageUrl(startIndex - 2);
+            }
+        }
+
+        function transitionToPage(targetIndex, direction) {
+            if (targetIndex < 0 || targetIndex >= readerState.totalPages) return;
+            if (readerState.isAnimating) {
+                pageQueue.push({targetIndex, direction});
+                return;
+            }
+            readerState.isAnimating = true;
+            const flipContainer = document.getElementById('flipContainer');
+            let currentEl = flipContainer.querySelector('.flip-page.current');
+            let incoming;
+            if (readerState.readingMode === 'double') {
+                let leftIndex, rightIndex;
+                if (readerState.readingDirection === 'rtl') {
+                    rightIndex = targetIndex;
+                    leftIndex = targetIndex + 1 < readerState.totalPages ? targetIndex + 1 : null;
+                } else {
+                    leftIndex = targetIndex;
+                    rightIndex = targetIndex + 1 < readerState.totalPages ? targetIndex + 1 : null;
+                }
+                const doublePageContent = createDoublePageElement(leftIndex, rightIndex);
+                incoming = document.createElement('div');
+                incoming.className = 'flip-page';
+                incoming.appendChild(doublePageContent);
+                const actualDirection = readerState.readingDirection === 'rtl'
+                    ? (direction === 'next' ? 'prev' : 'next')
+                    : direction;
+                incoming.style.transform = `translateX(${actualDirection === 'next' ? '100%' : '-100%'})`;
+                incoming.style.opacity = 1;
+                incoming.style.zIndex = 25;
+                flipContainer.appendChild(incoming);
+                let start = null;
+                const duration = 400;
+                function animate(timestamp) {
+                    if (!start) start = timestamp;
+                    const progress = Math.min((timestamp - start) / duration, 1);
+                    const ease = progress < 0.5
+                        ? 2 * progress * progress
+                        : -1 + (4 - 2 * progress) * progress;
+                    if (currentEl) {
+                        const offset = (actualDirection === 'next' ? -1 : 1) * ease * 100;
+                        currentEl.style.transform = `translateX(${offset}%)`;
+                        currentEl.style.opacity = 1 - progress;
+                    }
+                    const offsetNew = (actualDirection === 'next' ? 100 : -100) * (1 - ease);
+                    incoming.style.transform = `translateX(${offsetNew}%)`;
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        flipContainer.innerHTML = '';
+                        incoming.className = 'flip-page current';
+                        incoming.style.transform = 'translateX(0)';
+                        incoming.style.opacity = 1;
+                        flipContainer.appendChild(incoming);
+                        readerState.currentPage = targetIndex;
+                        updateProgress();
+                        readerState.isAnimating = false;
+                        if (pageQueue.length > 0) {
+                            const next = pageQueue.shift();
+                            transitionToPage(next.targetIndex, next.direction);
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+                if (leftIndex !== null && leftIndex + 2 < readerState.totalPages) {
+                    const nextRightImg = new Image();
+                    nextRightImg.src = getImageUrl(leftIndex + 2);
+                }
+                if (rightIndex !== null && rightIndex + 2 < readerState.totalPages) {
+                    const nextRightImg = new Image();
+                    nextRightImg.src = getImageUrl(rightIndex + 2);
+                }
+                if (targetIndex - 2 >= 0) {
+                    const prevLeftImg = new Image();
+                    prevLeftImg.src = getImageUrl(targetIndex - 2);
+                }
+            } else {
+                const currentEl = flipContainer.querySelector('.flip-page.current');
+                const incoming = createPageElement(targetIndex);
+                const actualDirection = readerState.readingDirection === 'rtl'
+                    ? (direction === 'next' ? 'prev' : 'next')
+                    : direction;
+                incoming.style.transform = `translateX(${actualDirection === 'next' ? '100%' : '-100%'})`;
+                incoming.style.opacity = 1;
+                incoming.style.zIndex = 25;
+                flipContainer.appendChild(incoming);
+                let start = null;
+                const duration = 400;
+                function animate(timestamp) {
+                    if (!start) start = timestamp;
+                    const progress = Math.min((timestamp - start) / duration, 1);
+                    const ease = progress < 0.5
+                        ? 2 * progress * progress
+                        : -1 + (4 - 2 * progress) * progress;
+                    if (currentEl) {
+                        const offset = (actualDirection === 'next' ? -1 : 1) * ease * 100;
+                        currentEl.style.transform = `translateX(${offset}%)`;
+                        currentEl.style.opacity = 1 - progress;
+                    }
+                    const offsetNew = (actualDirection === 'next' ? 100 : -100) * (1 - ease);
+                    incoming.style.transform = `translateX(${offsetNew}%)`;
+                    if (progress < 1) {
+                        requestAnimationFrame(animate);
+                    } else {
+                        flipContainer.innerHTML = '';
+                        incoming.className = 'flip-page current';
+                        incoming.style.transform = 'translateX(0)';
+                        incoming.style.opacity = 1;
+                        flipContainer.appendChild(incoming);
+                        readerState.currentPage = targetIndex;
+                        updateProgress();
+                        readerState.isAnimating = false;
+                        if (pageQueue.length > 0) {
+                            const next = pageQueue.shift();
+                            transitionToPage(next.targetIndex, next.direction);
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+                if (targetIndex + 1 < readerState.totalPages) {
+                    const nextImg = new Image();
+                    nextImg.src = getImageUrl(targetIndex + 1);
+                }
+                if (targetIndex - 1 >= 0) {
+                    const prevImg = new Image();
+                    prevImg.src = getImageUrl(targetIndex - 1);
+                }
+            }
+        }
+
+        function nextPage() {
+            if (readerState.readingMode === 'scroll') {
+                const flipContainer = document.getElementById('flipContainer');
+                flipContainer.scrollBy({
+                    top: flipContainer.clientHeight * 0.9,
+                    behavior: 'smooth'
+                });
+                return;
+            }
+            let nextPageIndex;
+            if (readerState.readingMode === 'double') {
+                nextPageIndex = readerState.currentPage + 2;
+            } else {
+                nextPageIndex = readerState.currentPage + 1;
+            }
+            if (nextPageIndex >= readerState.totalPages) {
+                loadNextChapter();
+            } else {
+                transitionToPage(nextPageIndex, 'next');
+            }
+        }
+
+        function prevPage() {
+            if (readerState.readingMode === 'scroll') {
+                const flipContainer = document.getElementById('flipContainer');
+                flipContainer.scrollBy({
+                    top: -flipContainer.clientHeight * 0.9,
+                    behavior: 'smooth'
+                });
+                return;
+            }
+            let prevPageIndex;
+            if (readerState.readingMode === 'double') {
+                prevPageIndex = readerState.currentPage - 2;
+            } else {
+                prevPageIndex = readerState.currentPage - 1;
+            }
+            if (prevPageIndex < 0) {
+                showToast("已是第一章第一页");
+                return;
+            }
+            transitionToPage(prevPageIndex, 'prev');
+        }
+
+        function setupImageDrag(img) {
+            let isDragging = false;
+            let startX = 0, startY = 0;
+            let translateX = 0, translateY = 0;
+            let startTranslateX = 0, startTranslateY = 0;
+            let scale = 1;
+            img.addEventListener('mousedown', e => {
+                if (scale > 1) {
+                    isDragging = true;
+                    startX = e.clientX;
+                    startY = e.clientY;
+                    startTranslateX = translateX;
+                    startTranslateY = translateY;
+                    e.preventDefault();
+                }
+            });
+            document.addEventListener('mousemove', e => {
+                if (isDragging) {
+                    translateX = startTranslateX + (e.clientX - startX);
+                    translateY = startTranslateY + (e.clientY - startY);
+                    img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+                }
+            });
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            img.addEventListener('wheel', e => {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                scale = Math.min(readerState.maxZoom, Math.max(readerState.minZoom, scale + delta));
+                readerState.zoomLevel = scale;
+                img.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+            }, { passive: false });
+        }
+
+        function updateProgress() {
+            if (readerState.readingMode === 'scroll') {
+                return;
+            }
+            const pageCounter = document.getElementById('pageCounter');
+            const pageNum = document.getElementById('pageNum');
+            const progressFill = document.getElementById('progressFill');
+            if (readerState.totalPages > 0) {
+                let currentPage, totalPages;
+                if (readerState.readingMode === 'double') {
+                    currentPage = readerState.currentPage + 1;
+                    totalPages = readerState.totalPages;
+                    const rightPage = readerState.currentPage + 1 < readerState.totalPages ? readerState.currentPage + 2 : '';
+                    const pageRange = rightPage ? `${currentPage}-${rightPage}` : `${currentPage}`;
+                    pageCounter.textContent = `${pageRange} / ${totalPages}`;
+                    pageNum.textContent = `第 ${pageRange} 页`;
+                    progressFill.style.width = `${(currentPage / totalPages) * 100}%`;
+                } else {
+                    currentPage = readerState.currentPage + 1;
+                    totalPages = readerState.totalPages;
+                    pageCounter.textContent = `${currentPage} / ${totalPages}`;
+                    pageNum.textContent = `第 ${currentPage} 页`;
+                    progressFill.style.width = `${(currentPage / totalPages) * 100}%`;
+                }
+            }
+            saveReadingProgress();
+        }
+
+        function saveReadingProgress() {
+            if (readerState.mangaId && readerState.chapterId) {
+            const progressData = {
+            chapterId: readerState.chapterId,
+            pageNum: readerState.currentPage,
+            timestamp: Date.now()
+        };
+            localStorage.setItem(`readingProgress_${readerState.mangaId}`, JSON.stringify(progressData));
+            }
+        }
+
+      function loadReadingProgress() {
+    const data = localStorage.getItem(`readingProgress_${readerState.mangaId}`);
+    if (data) {
+        try {
+            const progress = JSON.parse(data);
+            // 只有章节匹配时才恢复页码（防止跨章节错误）
+            if (progress.chapterId === readerState.chapterId) {
+                return progress.pageNum;
+            }
+        } catch (e) {
+            console.error('解析阅读进度失败:', e);
+        }
+    }
+    return null;
+}
+
+        function jumpToPage(event) {
+            const progressBar = event.currentTarget;
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const pos = clickX / rect.width;
+            if (readerState.readingMode === 'scroll') {
+                const flipContainer = document.getElementById('flipContainer');
+                const scrollHeight = flipContainer.scrollHeight - flipContainer.clientHeight;
+                flipContainer.scrollTop = pos * scrollHeight;
+            } else {
+                const targetPage = Math.floor(pos * readerState.totalPages);
+                if (targetPage >= 0 && targetPage < readerState.totalPages) {
+                    if (readerState.readingMode === 'double') {
+                        renderDoublePage(targetPage);
+                    } else {
+                        renderInstantPage(targetPage);
+                    }
+                }
+            }
+            saveReadingProgress();
+        }
+
+        function toggleSettings() {
+            const panel = document.getElementById('settingsPanel');
+            panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function changeReadingMode() {
+            const mode = document.getElementById('readingMode').value;
+            readerState.readingMode = mode;
+            if (mode === 'scroll') {
+                renderScrollMode();
+            } else if (mode === 'double') {
+                renderDoublePage(readerState.currentPage);
+            } else {
+                renderInstantPage(readerState.currentPage);
+            }
+            showToast(`阅读模式已切换为: ${mode}`);
+        }
+
+        function changeReadingDirection() {
+            const direction = document.getElementById('readingDirection').value;
+            readerState.readingDirection = direction;
+            showToast(`阅读方向已切换为: ${direction === 'rtl' ? '从右到左' : '从左到右'}`);
+            if (readerState.readingMode === 'double') {
+                renderDoublePage(readerState.currentPage);
+            }
+        }
+
+        function changeZoomLevel() {
+            const level = document.getElementById('zoomLevel').value;
+            showToast(`缩放级别: ${level}`);
+        }
+
+        function changeTheme() {
+            const theme = document.getElementById('theme').value;
+            readerState.theme = theme;
+            document.body.style.backgroundColor = theme === 'light' ? '#fff' : '#1a1a1a';
+            document.body.style.color = theme === 'light' ? '#000' : '#fff';
+            showToast(`主题已切换为: ${theme === 'light' ? '浅色' : '深色'}模式`);
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    console.error(`全屏请求失败: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function toggleUI() {
+            readerState.isUIHidden = !readerState.isUIHidden;
+            document.body.classList.toggle('ui-hidden', readerState.isUIHidden);
+        }
+
+        function handleKeyboard(e) {
+            switch(e.key) {
+                case 'ArrowLeft':
+                    prevPage();
+                    break;
+                case 'ArrowRight':
+                    nextPage();
+                    break;
+                case 'Escape':
+                    toggleUI();
+                    break;
+            }
+        }
+
+        function setupTouchEvents() {
+            let startX = 0, startY = 0;
+            document.addEventListener('touchstart', e => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+            }, { passive: true });
+            document.addEventListener('touchend', e => {
+                const endX = e.changedTouches[0].clientX;
+                const endY = e.changedTouches[0].clientY;
+                const diffX = startX - endX;
+                const diffY = startY - endY;
+                if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > 60) {
+                    if (readerState.readingDirection === 'rtl') {
+                        if (diffX > 0) {
+                            prevPage();
+                        } else {
+                            nextPage();
+                        }
+                    } else {
+                        if (diffX > 0) {
+                            nextPage();
+                        } else {
+                            prevPage();
+                        }
+                    }
+                }
+            }, { passive: true });
+        }
+
+        function goBack() {
+            if (readerState.mangaId) {
+                window.location.href = `manga-detail.html?id=${encodeURIComponent(readerState.mangaId)}`;
+            } else {
+                history.back();
+            }
+        }
+
+        function retryLoad() {
+            document.getElementById('errorMessage').style.display = 'none';
+            loadMangaData();
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            if (loading) {
+                loading.style.display = show ? 'flex' : 'none';
+            } else {
+                console.warn('Loading element not found!');
+            }
+        }
+
+        function showError(msg) {
+            const errorDiv = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            errorText.textContent = msg;
+            errorDiv.style.display = 'flex';
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('toast-show');
+            setTimeout(() => {
+                toast.classList.remove('toast-show');
+            }, 3000);
+        }
+
+        function zoomIn() {
+            readerState.zoomLevel = Math.min(readerState.maxZoom, readerState.zoomLevel + 0.2);
+            applyZoom();
+        }
+
+        function zoomOut() {
+            readerState.zoomLevel = Math.max(readerState.minZoom, readerState.zoomLevel - 0.2);
+            applyZoom();
+        }
+
+        function resetZoom() {
+            readerState.zoomLevel = 1;
+            applyZoom();
+        }
+
+        function applyZoom() {
+            const images = document.querySelectorAll('.page-image');
+            images.forEach(img => {
+                img.style.transform = `scale(${readerState.zoomLevel})`;
+            });
+        }
+
+        async function showChapterTransition(nextChapterTitle) {
+            return new Promise((resolve) => {
+                const flipContainer = document.getElementById('flipContainer');
+                const transitionOverlay = document.createElement('div');
+                transitionOverlay.style.position = 'absolute';
+                transitionOverlay.style.top = '0';
+                transitionOverlay.style.left = '0';
+                transitionOverlay.style.width = '100%';
+                transitionOverlay.style.height = '100%';
+                transitionOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+                transitionOverlay.style.display = 'flex';
+                transitionOverlay.style.justifyContent = 'center';
+                transitionOverlay.style.alignItems = 'center';
+                transitionOverlay.style.flexDirection = 'column';
+                transitionOverlay.style.zIndex = '30';
+                transitionOverlay.style.opacity = '0';
+                transitionOverlay.style.transition = 'opacity 0.5s ease';
+                const transitionText = document.createElement('div');
+                transitionText.textContent = '正在前往下一章...';
+                transitionText.style.color = '#fff';
+                transitionText.style.fontSize = '24px';
+                transitionText.style.marginBottom = '20px';
+                transitionText.style.textAlign = 'center';
+                const chapterTitle = document.createElement('div');
+                chapterTitle.textContent = nextChapterTitle;
+                chapterTitle.style.color = '#ff6b6b';
+                chapterTitle.style.fontSize = '18px';
+                chapterTitle.style.fontWeight = 'bold';
+                transitionOverlay.appendChild(transitionText);
+                transitionOverlay.appendChild(chapterTitle);
+                flipContainer.appendChild(transitionOverlay);
+                setTimeout(() => {
+                    transitionOverlay.style.opacity = '1';
+                }, 50);
+                setTimeout(() => {
+                    transitionOverlay.style.opacity = '0';
+                    setTimeout(() => {
+                        flipContainer.removeChild(transitionOverlay);
+                        resolve();
+                    }, 500);
+                }, 1500);
+            });
+        }
+
+        async function loadNextChapter() {
+            try {
+                const currentChapterIndex = readerState.chapters.findIndex(ch => ch.id === readerState.chapterId);
+                if (currentChapterIndex === -1 || currentChapterIndex === readerState.chapters.length - 1) {
+                    showToast("已是最后一章");
+                    return;
+                }
+                const nextChapter = readerState.chapters[currentChapterIndex + 1];
+                if (readerState.readingMode !== 'scroll') {
+                    await showChapterTransition(`第${nextChapter.number}话: ${nextChapter.title}`);
+                }
+                readerState.chapterId = nextChapter.id;
+                document.getElementById('chapterTitle').textContent = `第${nextChapter.number}话: ${nextChapter.title}`;
+                readerState.currentPage = 0;
+                await loadChapterData(nextChapter.id);
+                if (readerState.readingMode === 'scroll') {
+                    renderScrollMode();
+                } else if (readerState.readingMode === 'double') {
+                    renderDoublePage(readerState.currentPage);
+                } else {
+                    renderInstantPage(readerState.currentPage);
+                }
+            } catch (err) {
+                console.error('加载下一章失败:', err);
+                showError('加载下一章失败: ' + err.message);
+            }
+        }
+
+        async function renderScrollMode() {
+            const flipContainer = document.getElementById('flipContainer');
+            flipContainer.innerHTML = '';
+            flipContainer.style.overflowX = 'hidden';
+            flipContainer.style.overflowY = 'auto';
+            flipContainer.style.display = 'block';
+            flipContainer.style.height = '100%';
+            const scrollContainer = document.createElement('div');
+            scrollContainer.style.width = '100%';
+            scrollContainer.style.display = 'flex';
+            scrollContainer.style.flexDirection = 'column';
+            scrollContainer.style.alignItems = 'center';
+            for (let i = 0; i < readerState.pages.length; i++) {
+                const pageWrapper = document.createElement('div');
+                pageWrapper.style.width = '100%';
+                pageWrapper.style.display = 'flex';
+                pageWrapper.style.justifyContent = 'center';
+                pageWrapper.style.padding = '5px 0';
+                const img = new Image();
+                img.className = 'page-image';
+                img.draggable = false;
+                img.alt = `第${i+1}页`;
+                img.style.maxWidth = '95%';
+                img.style.height = 'auto';
+                img.style.display = 'block';
+                const imageUrl = getImageUrl(i);
+                if (imageUrl) {
+                    img.src = imageUrl;
+                }
+                pageWrapper.appendChild(img);
+                scrollContainer.appendChild(pageWrapper);
+            }
+            flipContainer.appendChild(scrollContainer);
+            flipContainer.scrollTop = 0;
+            flipContainer.addEventListener('scroll', updateScrollProgress);
+            updateScrollProgress();
+        }
+
+        function updateScrollProgress() {
+            if (readerState.readingMode !== 'scroll') return;
+            const flipContainer = document.getElementById('flipContainer');
+            const scrollTop = flipContainer.scrollTop;
+            const scrollHeight = flipContainer.scrollHeight - flipContainer.clientHeight;
+            if (scrollHeight <= 0) {
+                document.getElementById('pageCounter').textContent = `1 / 1`;
+                document.getElementById('pageNum').textContent = `已到底`;
+                document.getElementById('progressFill').style.width = `100%`;
+                return;
+            }
+            const scrollPercentage = (scrollTop / scrollHeight);
+            const currentPage = Math.floor(scrollPercentage * readerState.totalPages) + 1;
+            document.getElementById('pageCounter').textContent = `${currentPage} / ${readerState.totalPages}`;
+            document.getElementById('pageNum').textContent = `第 ${currentPage} 页`;
+            document.getElementById('progressFill').style.width = `${scrollPercentage * 100}%`;
+            readerState.currentPage = currentPage - 1;
+            saveReadingProgress();
+            if (scrollTop >= scrollHeight - 50 && !readerState.isLoadingNextChapter) {
+                readerState.isLoadingNextChapter = true;
+                loadNextChapter().finally(() => {
+                    readerState.isLoadingNextChapter = false;
+                });
+            }
+        }
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"63f3b830c4a8439896885448af2cfd72","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>

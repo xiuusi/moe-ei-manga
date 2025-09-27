@@ -1,0 +1,212 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>你的标题</title>
+    <!-- 引入外部样式表 -->
+    <link rel="stylesheet" href="/style.css">
+    <style>
+        /* 添加内联样式确保标题立即显示 */
+        .section-title {
+            opacity: 1 !important;
+            transform: none !important;
+        }
+
+        /* 调整内容区域的动画，只对漫画网格生效 */
+        .content-section .container > *:not(.section-title) {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .content-section.active .container > *:not(.section-title) {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 确保分页控件也参与动画 */
+        .pagination {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+
+        .content-section.active .pagination {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">你的标题</div>
+                <ul class="nav-menu">
+                    <!-- 为当前页面添加 active 类 -->
+                    <li><a href="/" class="active">首页</a></li>
+                    <li><a href="/search.html">搜索</a></li>
+                    <li><a href="/tag.html">标签</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <main class="content-section" id="mainContentSection">
+        <div class="container">
+            <h2 class="section-title">全部漫画</h2>
+            <div class="manga-grid" id="allMangaGrid">
+                <div class="loading">加载中...</div>
+            </div>
+            <div id="pagination" class="pagination"></div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 使用各种ai杂交制作的漫画网站，仅供于学习交流</p>
+            <p>联系邮箱：</p>
+            <!-- 统一页脚结构 -->
+            <p><a href="/login.html" class="admin-link">管理后台</a></p>
+        </div>
+    </footer>
+
+    <script>
+        const MANGA_PER_PAGE = window.innerWidth < 768 ? 12 : 14;
+        let currentPage = 1;
+        let totalPages = 1;
+        let currentSearchQuery = '';
+
+        // 渲染漫画卡片（不包含动画类，由 displayPage 统一控制）
+        function renderMangaCard(manga) {
+            const card = document.createElement('div');
+            card.className = 'manga-card';
+            card.onclick = () => goToMangaDetail(manga.id);
+            card.innerHTML = `
+                <img src="/api/manga/${manga.id}/cover" alt="${manga.title}" class="manga-cover"
+                     onerror="this.src='https://placehold.co/200x300/eee/999?text=封面'">
+                <div class="manga-info">
+                    <div class="manga-title">${manga.title}</div>
+                    <div class="manga-author">${manga.author}</div>
+                </div>
+            `;
+            return card;
+        }
+
+        // 显示指定页漫画（带动画）
+        function displayPage(pageNumber, mangaData, total) {
+            const container = document.getElementById('allMangaGrid');
+            const mainSection = document.getElementById('mainContentSection');
+            container.innerHTML = '';
+
+            totalPages = Math.ceil(total / MANGA_PER_PAGE);
+            currentPage = pageNumber;
+
+            if (mangaData.length === 0) {
+                container.innerHTML = '<div class="no-manga">暂无内容</div>';
+                document.getElementById('pagination').innerHTML = '';
+                mainSection.classList.add('active');
+                return;
+            }
+
+            mangaData.forEach(manga => {
+                container.appendChild(renderMangaCard(manga));
+            });
+
+            // 激活动画区域
+            if (!mainSection.classList.contains('active')) {
+                mainSection.classList.add('active');
+            }
+
+            // 为前20个卡片添加动画延迟
+            const cards = container.querySelectorAll('.manga-card');
+            cards.forEach((card, index) => {
+                if (index < 20) {
+                    card.style.animationDelay = `${0.1 + index * 0.05}s`;
+                }
+            });
+
+            // 渲染分页控件
+            renderPagination(total, pageNumber);
+        }
+
+        // 渲染分页按钮
+        function renderPagination(totalItems, currentPage) {
+            const paginationContainer = document.getElementById('pagination');
+            paginationContainer.innerHTML = '';
+
+            const totalPages = Math.ceil(totalItems / MANGA_PER_PAGE);
+            if (totalPages <= 1) return;
+
+            const maxVisible = window.innerWidth < 480 ? 3 : 7;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage + 1 < maxVisible) {
+                startPage = Math.max(1, endPage - maxVisible + 1);
+            }
+
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '‹';
+            prevButton.disabled = currentPage === 1;
+            prevButton.onclick = () => loadMangaData(currentSearchQuery, currentPage - 1);
+            paginationContainer.appendChild(prevButton);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                if (i === currentPage) btn.classList.add('active');
+                btn.onclick = () => loadMangaData(currentSearchQuery, i);
+                paginationContainer.appendChild(btn);
+            }
+
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '›';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.onclick = () => loadMangaData(currentSearchQuery, currentPage + 1);
+            paginationContainer.appendChild(nextButton);
+        }
+
+        // 加载漫画数据（支持搜索 + 分页）
+        async function loadMangaData(searchQuery = '', page = 1) {
+            currentSearchQuery = searchQuery;
+            const grid = document.getElementById('allMangaGrid');
+            grid.innerHTML = '<div class="loading">加载中...</div>';
+            document.getElementById('pagination').innerHTML = '';
+
+            try {
+                const params = new URLSearchParams({
+                    page: page,
+                    limit: MANGA_PER_PAGE
+                });
+                if (searchQuery) {
+                    params.set('q', searchQuery);
+                }
+                const url = searchQuery ? `/api/manga/search?${params.toString()}` : `/api/manga?${params.toString()}`;
+                const res = await fetch(url);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const { data, total } = await res.json();
+                displayPage(page, data, total);
+
+                // 滚动到漫画区域顶部（可选）
+                document.getElementById('mainContentSection').scrollIntoView({ behavior: 'smooth' });
+            } catch (error) {
+                console.error('加载失败:', error);
+                grid.innerHTML = `<div class="no-manga">加载失败: ${error.message}</div>`;
+                document.getElementById('pagination').innerHTML = '';
+                document.getElementById('mainContentSection').classList.add('active');
+            }
+        }
+
+        function goToMangaDetail(mangaId) {
+            window.location.href = `/manga-detail.html?id=${mangaId}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // 初始加载第一页
+            loadMangaData('', 1);
+        });
+    </script>
+</body>
+</html>

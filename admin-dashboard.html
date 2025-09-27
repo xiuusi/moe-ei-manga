@@ -1,0 +1,2191 @@
+admin-dashboard.html
+<!-- admin-dashboard 副本.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>漫画管理后台 | MangaReader</title>
+    <style>
+        /* 继承 1.2.2 的核心 UI 风格 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .admin-header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .admin-logo {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .admin-nav {
+            display: flex;
+            gap: 20px;
+        }
+        .admin-nav a {
+            color: #ecf0f1;
+            text-decoration: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        .admin-nav a:hover, .admin-nav a.active {
+            background-color: #34495e;
+        }
+        .admin-main {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .admin-section {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: none; /* 默认隐藏 */
+        }
+        .admin-section.active {
+            display: block; /* 显示活动标签页 */
+        }
+        .section-title {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+            margin-right: 10px;
+        }
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #229954;
+        }
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+        .btn-warning:hover {
+            background-color: #d68910;
+        }
+        .btn-info {
+            background-color: #3498db;
+            color: white;
+        }
+        .btn-info:hover {
+            background-color: #2980b9;
+        }
+        .btn:disabled {
+            background-color: #95a5a6 !important;
+            cursor: not-allowed;
+        }
+        .upload-area {
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+            background-color: #fafafa;
+        }
+        .upload-area:hover {
+            border-color: #3498db;
+            background-color: #e3f2fd;
+        }
+        .upload-area.dragover {
+            border-color: #3498db;
+            background-color: #d4edda;
+        }
+        .upload-area i {
+            font-size: 48px;
+            color: #3498db;
+            margin-bottom: 15px;
+            display: block;
+        }
+        .file-info {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #e8f4f8;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #f0f0f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+            display: none;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #3498db;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .table-responsive {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            color: #555;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-published {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-draft {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            z-index: 10000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease-in-out;
+        }
+        .notification.show {
+            transform: translateX(0);
+        }
+        .notification.success {
+            background-color: #27ae60;
+        }
+        .notification.error {
+            background-color: #e74c3c;
+        }
+        .notification.info {
+            background-color: #3498db;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+            font-size: 18px;
+        }
+        .error-message {
+            color: #e74c3c;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 4px;
+            margin: 10px 0;
+            display: none;
+        }
+        /* 统计卡片 - 保留 1.2.3 的现代化设计 */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 10px 0;
+            color: #3498db;
+        }
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 1rem;
+        }
+        .stat-primary { border-top: 4px solid #3498db; }
+        .stat-success { border-top: 4px solid #27ae60; }
+        .stat-warning { border-top: 4px solid #f39c12; }
+        .stat-danger { border-top: 4px solid #e74c3c; }
+        /* 最近活动 - 继承 1.2.2 的设计 */
+        .recent-activity {
+            margin-top: 30px;
+        }
+        .activity-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+        .activity-time {
+            color: #999;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+        .activity-content {
+            color: #333;
+            font-size: 14px;
+        }
+        /* 可选封面区域样式 */
+        .optional-cover {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .optional-cover label {
+            font-weight: normal !important;
+            color: #856404 !important;
+        }
+        /* 模态框样式 - 保留 1.2.3 的现代化设计 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            animation: fadeIn 0.3s ease;
+        }
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        .close:hover {
+            color: #e74c3c;
+        }
+        .chapter-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 15px 0;
+        }
+        .chapter-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        .chapter-item:last-child {
+            border-bottom: none;
+        }
+        .chapter-info {
+            flex: 1;
+        }
+        .chapter-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .tag-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 15px 0;
+        }
+        .tag-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            background-color: #f8f9fa;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+        .tag-item:last-child {
+            border-bottom: none;
+        }
+        .tag-info {
+            flex: 1;
+        }
+        .tag-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .manga-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        .manga-tag {
+            background-color: #3498db;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .manga-tag .remove-tag {
+            margin-left: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* 管理员分页样式 */
+        .admin-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .pagination-info {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background: #f8f9fa;
+            border-color: #ff6b6b;
+        }
+
+        .page-btn.active {
+            background: #ff6b6b;
+            color: white;
+            border-color: #ff6b6b;
+        }
+
+        .page-btn:disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        .page-input {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .page-size-select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .admin-action-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .admin-action-buttons .btn {
+            padding: 6px 12px;
+            font-size: 12px;
+            margin: 2px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .admin-action-buttons .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .admin-action-buttons .btn-warning {
+            background: #ffc107;
+            color: white;
+        }
+
+        .admin-action-buttons .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+
+        .admin-action-buttons .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 768px) {
+            .admin-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .admin-nav {
+                gap: 15px;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+            .admin-pagination {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .pagination-controls {
+                flex-wrap: wrap;
+            }
+            .search-box {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 管理后台头部 -->
+    <header class="admin-header">
+        <div class="admin-container">
+            <div class="admin-logo">📚 MangaReader 管理后台</div>
+            <nav class="admin-nav">
+                <a href="#dashboard" class="active" onclick="switchTab('dashboard', this)">仪表板</a>
+                <a href="#upload" onclick="switchTab('upload', this)">上传漫画</a>
+                <a href="#manga" onclick="switchTab('manga', this)">漫画管理</a>
+                <a href="#tags" onclick="switchTab('tags', this)">标签管理</a>
+                <a href="#" onclick="logout()">登出</a>
+                <a href="/">返回前台</a>
+            </nav>
+        </div>
+    </header>
+    <!-- 通知消息 -->
+    <div id="notification" class="notification"></div>
+    <!-- 主要内容区域 -->
+    <main class="admin-main">
+        <!-- 仪表板 -->
+        <section id="dashboard" class="admin-section tab-content active">
+            <h2 class="section-title">仪表板</h2>
+            <!-- 统计卡片 -->
+            <div class="stats-grid">
+                <div class="stat-card stat-primary">
+                    <div class="stat-icon">📖</div>
+                    <div class="stat-number" id="totalManga">0</div>
+                    <div class="stat-label">总漫画数</div>
+                </div>
+                <div class="stat-card stat-warning">
+                    <div class="stat-icon">👁️</div>
+                    <div class="stat-number" id="totalVisitors">0</div>
+                    <div class="stat-label">总访问量</div>
+                </div>
+            </div>
+            <!-- 最近活动 -->
+            <div class="recent-activity">
+                <h3>最近活动</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>操作类型</th>
+                                <th>漫画名称</th>
+                                <th>时间</th>
+                            </tr>
+                        </thead>
+                        <tbody id="recentActivities">
+                            <tr>
+                                <td colspan="3" class="loading">加载中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        <!-- 上传漫画 -->
+        <section id="upload" class="admin-section tab-content">
+            <h2 class="section-title">上传漫画</h2>
+            <div id="uploadError" class="error-message"></div>
+            <form id="uploadForm">
+                <div class="form-group">
+                    <label for="mangaTitle">漫画名称 *</label>
+                    <input type="text" id="mangaTitle" name="title" required placeholder="请输入漫画名称">
+                </div>
+                <div class="form-group">
+                    <label for="mangaAuthor">作者 *</label>
+                    <input type="text" id="mangaAuthor" name="author" required placeholder="请输入作者姓名">
+                </div>
+                <div class="form-group">
+                    <label for="mangaDescription">漫画简介</label>
+                    <textarea id="mangaDescription" name="description" placeholder="请输入漫画简介"></textarea>
+                </div>
+                <!-- 漫画标签 -->
+                <div class="form-group">
+                    <label for="mangaTags">漫画标签</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <select id="tagSelect" style="flex: 1;">
+                            <option value="">选择标签...</option>
+                        </select>
+                        <button type="button" class="btn btn-info" onclick="addTagToManga()">添加标签</button>
+                    </div>
+                    <div id="selectedTags" class="manga-tags" style="margin-top: 10px;">
+                        <!-- 标签将动态添加 -->
+                    </div>
+                </div>
+                <div class="optional-cover">
+                    <div class="form-group">
+                        <label for="cover">封面图片 (可选 - 留空将自动使用CBZ中第一张图片)</label>
+                        <div class="upload-area" id="coverUploadArea" onclick="document.getElementById('cover').click()">
+                            <i>📁</i>
+                            <p>点击上传封面图片 (JPG, PNG, GIF, WebP)</p>
+                            <p>或拖拽文件到此处</p>
+                        </div>
+                        <input type="file" id="cover" name="cover" accept="image/*" style="display: none;">
+                        <div id="coverInfo" class="file-info" style="display: none;"></div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="file">漫画文件 (CBZ/CBR) *</label>
+                    <div class="upload-area" id="fileUploadArea" onclick="document.getElementById('file').click()">
+                        <i>📚</i>
+                        <p>点击上传漫画文件</p>
+                        <p>支持 CBZ, CBR, ZIP, RAR 格式</p>
+                    </div>
+                    <input type="file" id="file" name="file" accept=".zip,.rar,.cbz,.cbr" style="display: none;">
+                    <div id="fileInfo" class="file-info" style="display: none;"></div>
+                </div>
+                <div class="progress-bar" id="uploadProgress">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <button type="submit" class="btn btn-success" id="uploadBtn">上传漫画</button>
+                <button type="button" class="btn btn-warning" onclick="resetForm()">重置</button>
+            </form>
+        </section>
+        <!-- 漫画管理 -->
+        <section id="manga" class="admin-section tab-content">
+            <h2 class="section-title">漫画管理</h2>
+            <div id="manageError" class="error-message"></div>
+
+            <div class="search-box" style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+                <input type="text" id="searchInput" placeholder="搜索漫画名称或作者..."
+                       style="flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 25px; font-size: 14px;">
+                <button class="btn btn-primary" onclick="searchManga()" style="padding: 12px 20px;">搜索</button>
+                <button class="btn btn-warning" onclick="resetSearch()" style="padding: 12px 20px;">重置</button>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="80">封面</th>
+                            <th>漫画名称</th>
+                            <th width="120">作者</th>
+                            <th width="120">上传时间</th>
+                            <th width="100">文件大小</th>
+                            <th width="150">标签</th>
+                            <th width="200">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mangaList">
+                        <tr>
+                            <td colspan="7" class="loading">加载中...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 分页控件 -->
+            <div class="admin-pagination">
+                <div class="pagination-info" id="paginationInfo">
+                    显示 0-0 条，共 0 条
+                </div>
+                <div class="pagination-controls">
+                    <button class="page-btn" onclick="goToPage(1)" id="firstPage" disabled>首页</button>
+                    <button class="page-btn" onclick="previousPage()" id="prevPage" disabled>上一页</button>
+
+                    <span>第</span>
+                    <input type="number" class="page-input" id="currentPageInput" min="1" value="1"
+                           onchange="goToPage(parseInt(this.value))">
+                    <span>页</span>
+
+                    <button class="page-btn" onclick="nextPage()" id="nextPage" disabled>下一页</button>
+                    <button class="page-btn" onclick="goToPage(totalPages)" id="lastPage" disabled>末页</button>
+
+                    <select class="page-size-select" id="pageSizeSelect" onchange="changePageSize(parseInt(this.value))">
+                        <option value="10">10条/页</option>
+                        <option value="20">20条/页</option>
+                        <option value="50">50条/页</option>
+                        <option value="100">100条/页</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+        <!-- 标签管理 -->
+        <section id="tags" class="admin-section tab-content">
+            <h2 class="section-title">标签管理</h2>
+            <div id="tagsError" class="error-message"></div>
+            <div class="form-group">
+                <label for="namespaceSelect">选择标签分类</label>
+                <select id="namespaceSelect" onchange="loadTags()">
+                    <option value="">选择分类...</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="tagName">标签名称</label>
+                <input type="text" id="tagName" placeholder="输入新标签名称">
+            </div>
+            <div class="form-group">
+                <label for="tagSlug">标签标识 (英文，用于URL)</label>
+                <input type="text" id="tagSlug" placeholder="输入标签标识，如：romance">
+            </div>
+            <div class="form-group">
+                <label for="tagDescription">标签描述</label>
+                <textarea id="tagDescription" placeholder="输入标签描述信息"></textarea>
+            </div>
+            <button class="btn btn-success" onclick="createTag()">创建标签</button>
+            <button class="btn btn-warning" onclick="createNamespace()">创建标签分类</button>
+            <h3 style="margin-top: 30px;">标签列表</h3>
+            <div id="tagList" class="tag-list">
+                <!-- 标签列表将通过JavaScript动态生成 -->
+            </div>
+        </section>
+    </main>
+    <!-- 章节管理模态框 -->
+    <div id="chapterModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeChapterModal()">&times;</span>
+            <h2>章节管理 - <span id="mangaTitle"></span></h2>
+            <div class="form-group">
+                <label for="chapterTitle">章节标题 *</label>
+                <input type="text" id="chapterTitle" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="chapterNumber">章节编号 *</label>
+                <input type="number" id="chapterNumber" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="chapterFile">章节文件 *</label>
+                <input type="file" id="chapterFile" class="form-control" accept=".zip,.cbz" required>
+            </div>
+            <button class="btn btn-success" onclick="addChapter()">添加章节</button>
+            <h3 style="margin-top: 30px;">现有章节</h3>
+            <div id="chapterList" class="chapter-list">
+                <!-- 章节列表将通过JavaScript动态生成 -->
+            </div>
+        </div>
+    </div>
+    <!-- 编辑章节模态框 -->
+    <div id="editChapterModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditChapterModal()">&times;</span>
+            <h2>编辑章节</h2>
+            <input type="hidden" id="editChapterId">
+            <div class="form-group">
+                <label for="editChapterTitle">章节标题 *</label>
+                <input type="text" id="editChapterTitle" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="editChapterNumber">章节编号 *</label>
+                <input type="number" id="editChapterNumber" class="form-control" required>
+            </div>
+            <button class="btn btn-warning" onclick="updateChapter()">更新章节</button>
+        </div>
+    </div>
+    <!-- 编辑漫画模态框 -->
+    <div id="editMangaModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeEditMangaModal()">&times;</span>
+            <h2>编辑漫画</h2>
+            <input type="hidden" id="editMangaId">
+            <div class="form-group">
+                <label for="editMangaTitle">漫画名称 *</label>
+                <input type="text" id="editMangaTitle" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="editMangaAuthor">作者 *</label>
+                <input type="text" id="editMangaAuthor" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="editMangaDescription">漫画简介</label>
+                <textarea id="editMangaDescription" class="form-control"></textarea>
+            </div>
+            <!-- 编辑漫画标签 -->
+            <div class="form-group">
+                <label>编辑标签</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="editTagSelect" style="flex: 1;">
+                        <option value="">选择标签...</option>
+                    </select>
+                    <button type="button" class="btn btn-info" onclick="addTagToEditManga()">添加标签</button>
+                </div>
+                <div id="editMangaTags" class="manga-tags" style="margin-top: 10px;">
+                    <!-- 标签将动态添加 -->
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="editMangaCover">封面图片 (可选)</label>
+                <input type="file" id="editMangaCover" class="form-control" accept="image/*">
+                <small>留空则不修改当前封面</small>
+            </div>
+            <button class="btn btn-warning" onclick="updateManga()">更新漫画</button>
+        </div>
+    </div>
+    <!-- 标签分类管理模态框 -->
+    <div id="namespaceModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeNamespaceModal()">&times;</span>
+            <h2>创建标签分类</h2>
+            <div class="form-group">
+                <label for="namespaceName">分类名称</label>
+                <input type="text" id="namespaceName" placeholder="输入分类名称，如：type">
+            </div>
+            <div class="form-group">
+                <label for="namespaceDisplayName">显示名称</label>
+                <input type="text" id="namespaceDisplayName" placeholder="输入显示名称，如：创作类型">
+            </div>
+            <div class="form-group">
+                <label for="namespaceDescription">分类描述</label>
+                <textarea id="namespaceDescription" placeholder="输入分类描述信息"></textarea>
+            </div>
+            <button class="btn btn-success" onclick="createNamespaceFromModal()">创建分类</button>
+        </div>
+    </div>
+
+    <script>
+        // 管理后台状态
+        const adminState = {
+            sessionId: null,
+            startTime: Date.now(),
+            mangaData: [],
+            tags: [],
+            namespaces: []
+        };
+        let currentMangaId = null;
+        let currentSelectedTags = []; // 上传漫画时的标签
+
+        // 分页相关变量
+        let currentPage = 1;
+        let itemsPerPage = 10;
+        let totalPages = 1;
+        let totalItems = 0;
+        let currentSearch = '';
+
+        // 显示通知消息
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            if (notification) {
+                notification.textContent = message;
+                notification.className = `notification ${type} show`;
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+        }
+
+        // 显示错误信息
+        function showError(elementId, message) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = message;
+                element.style.display = 'block';
+            }
+        }
+
+        // 隐藏错误信息
+        function hideError(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.style.display = 'none';
+            }
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            checkLoginStatus();
+            const uploadForm = document.getElementById('uploadForm');
+            if (uploadForm) {
+                uploadForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    uploadManga();
+                });
+            }
+            setupFileInputs();
+            setupDragAndDrop();
+            loadTagNamespaces();
+            loadAllTags();
+
+            // 初始化分页
+            setTimeout(() => {
+                if (document.getElementById('manga').classList.contains('active')) {
+                    loadMangaList(currentPage, currentSearch);
+                }
+            }, 100);
+        });
+
+        // 检查登录状态
+        async function checkLoginStatus() {
+            try {
+                const sessionId = localStorage.getItem('admin_session_id');
+                if (!sessionId) {
+                    window.location.href = '/login.html';
+                    return false;
+                }
+                const response = await fetch('/api/auth/check', {
+                    headers: {
+                        'Authorization': `Bearer ${sessionId}`
+                    }
+                });
+                const result = await response.json();
+                if (response.ok && result.authenticated) {
+                    adminState.sessionId = sessionId;
+                    showAdminDashboard();
+                    return true;
+                } else {
+                    localStorage.removeItem('admin_session_id');
+                    window.location.href = '/login.html';
+                    return false;
+                }
+            } catch (error) {
+                console.error('检查登录状态失败:', error);
+                showNotification('检查登录状态失败', 'error');
+                localStorage.removeItem('admin_session_id');
+                window.location.href = '/login.html';
+                return false;
+            }
+        }
+
+        // 显示管理后台
+        function showAdminDashboard() {
+            loadDashboardData();
+            loadMangaList(currentPage, currentSearch);
+        }
+
+// 加载仪表板数据
+async function loadDashboardData() {
+    try {
+        // 获取漫画总数
+        const mangaCountResponse = await fetch('/api/manga?page=1&pageSize=1');
+        const mangaCountData = await mangaCountResponse.json();
+        const totalMangaCount = mangaCountData.total || 0;
+
+        // 获取一些漫画数据用于最近活动
+        const mangaResponse = await fetch('/api/manga?page=1&pageSize=5');
+        const mangaData = await mangaResponse.json();
+        const mangaList = mangaData.data || [];
+
+        const statsResponse = await fetch('/api/stats');
+        const statsData = await statsResponse.json();
+
+        // 更新统计
+        updateStatistics(totalMangaCount, statsData);
+        updateRecentActivity(mangaList);
+    } catch (error) {
+        console.error('加载仪表板数据失败:', error);
+        showNotification('加载仪表板数据失败', 'error');
+    }
+}
+
+// 更新统计信息函数
+function updateStatistics(totalMangaCount, statsData) {
+    if (!statsData || typeof statsData !== 'object') statsData = {};
+
+    // 更新漫画总数
+    const totalManga = document.getElementById('totalManga');
+    if (totalManga) totalManga.textContent = totalMangaCount;
+
+    // 更新访问者数量
+    const totalVisitors = document.getElementById('totalVisitors');
+    if (totalVisitors) {
+        const visits = statsData.totalVisits || 0;
+        totalVisitors.textContent = visits;
+    }
+}
+
+        // 更新最近活动
+        function updateRecentActivity(mangaData) {
+            const recentActivities = document.getElementById('recentActivities');
+            if (!recentActivities) return;
+            recentActivities.innerHTML = '';
+
+            const sortedManga = [...mangaData].sort((a, b) => new Date(b.uploadTime) - new Date(a.uploadTime));
+            const recentManga = sortedManga.slice(0, 5);
+
+            if (recentManga.length === 0) {
+                recentActivities.innerHTML = '<tr><td colspan="3" class="loading">暂无活动</td></tr>';
+                return;
+            }
+
+            recentManga.forEach(manga => {
+                const row = document.createElement('tr');
+                const uploadTime = manga.uploadTime ? new Date(manga.uploadTime).toLocaleString() : '未知';
+                row.innerHTML = `
+                    <td>上传漫画</td>
+                    <td>《${manga.title}》</td>
+                    <td>${uploadTime}</td>
+                `;
+                recentActivities.appendChild(row);
+            });
+        }
+
+        // 设置文件输入事件
+        function setupFileInputs() {
+            const coverInput = document.getElementById('cover');
+            const fileInput = document.getElementById('file');
+            if (coverInput) {
+                coverInput.addEventListener('change', function(e) {
+                    if (e.target.files[0]) {
+                        const file = e.target.files[0];
+                        const fileInfo = document.getElementById('coverInfo');
+                        if (fileInfo) {
+                            fileInfo.innerHTML = `
+                                <strong>已选择文件：</strong>${file.name}<br>
+                                <strong>文件大小：</strong>${(file.size / 1024).toFixed(2)} KB
+                            `;
+                            fileInfo.style.display = 'block';
+                        }
+                        hideError('uploadError');
+                    }
+                });
+            }
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    if (e.target.files[0]) {
+                        const file = e.target.files[0];
+                        const fileInfo = document.getElementById('fileInfo');
+                        if (fileInfo) {
+                            fileInfo.innerHTML = `
+                                <strong>已选择文件：</strong>${file.name}<br>
+                                <strong>文件大小：</strong>${(file.size / (1024 * 1024)).toFixed(2)} MB
+                            `;
+                            fileInfo.style.display = 'block';
+                        }
+                        hideError('uploadError');
+                    }
+                });
+            }
+        }
+
+        // 设置拖拽上传
+        function setupDragAndDrop() {
+            const coverUploadArea = document.getElementById('coverUploadArea');
+            const fileUploadArea = document.getElementById('fileUploadArea');
+
+            [coverUploadArea, fileUploadArea].forEach(area => {
+                if (!area) return;
+                area.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    area.classList.add('dragover');
+                });
+                area.addEventListener('dragleave', e => {
+                    e.preventDefault();
+                    area.classList.remove('dragover');
+                });
+            });
+
+            if (coverUploadArea) {
+                coverUploadArea.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0 && files[0].type.startsWith('image/')) {
+                        const coverInput = document.getElementById('cover');
+                        if (coverInput) {
+                            const dt = new DataTransfer();
+                            dt.items.add(files[0]);
+                            coverInput.files = dt.files;
+                            coverInput.dispatchEvent(new Event('change'));
+                        }
+                    } else {
+                        showError('uploadError', '请上传 JPG、PNG、GIF 或 WebP 格式的图片文件！');
+                        showNotification('文件格式不支持！', 'error');
+                    }
+                });
+            }
+
+            if (fileUploadArea) {
+                fileUploadArea.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0) {
+                        const file = files[0];
+                        const allowed = ['.zip', '.rar', '.cbz', '.cbr'];
+                        const ext = '.' + file.name.split('.').pop().toLowerCase();
+                        if (allowed.includes(ext)) {
+                            const fileInput = document.getElementById('file');
+                            if (fileInput) {
+                                const dt = new DataTransfer();
+                                dt.items.add(file);
+                                fileInput.files = dt.files;
+                                fileInput.dispatchEvent(new Event('change'));
+                            }
+                        } else {
+                            showError('uploadError', '请上传 CBZ、CBR、ZIP 或 RAR 格式的漫画文件！');
+                            showNotification('文件格式不支持！', 'error');
+                        }
+                    }
+                });
+            }
+        }
+
+        // 切换标签页
+        function switchTab(tabId, clickedElement) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.admin-nav a').forEach(link => link.classList.remove('active'));
+            const targetTab = document.getElementById(tabId);
+            if (targetTab) targetTab.classList.add('active');
+            if (clickedElement) clickedElement.classList.add('active');
+            if (tabId === 'dashboard') loadDashboardData();
+            if (tabId === 'manga') loadMangaList(currentPage, currentSearch);
+            if (tabId === 'tags') loadTagNamespaces();
+        }
+
+        // 上传漫画
+        async function uploadManga() {
+            const title = document.getElementById('mangaTitle').value;
+            const author = document.getElementById('mangaAuthor').value;
+            const description = document.getElementById('mangaDescription').value;
+            const coverFile = document.getElementById('cover').files[0];
+            const mangaFile = document.getElementById('file').files[0];
+
+            if (!title || !author) {
+                showError('uploadError', '请填写漫画名称和作者！');
+                showNotification('请填写必填字段！', 'error');
+                return;
+            }
+            if (!mangaFile) {
+                showError('uploadError', '请选择漫画文件！');
+                showNotification('请选择漫画文件！', 'error');
+                return;
+            }
+
+            const allowedExtensions = ['.zip', '.rar', '.cbz', '.cbr'];
+            const fileExtension = '.' + mangaFile.name.split('.').pop().toLowerCase();
+            if (!allowedExtensions.includes(fileExtension)) {
+                showError('uploadError', '漫画文件只支持 CBZ、CBR、ZIP、RAR 格式！');
+                showNotification('漫画文件格式不支持！', 'error');
+                return;
+            }
+
+            if (mangaFile.size > 200 * 1024 * 1024) {
+                showError('uploadError', '漫画文件大小不能超过 200MB！');
+                showNotification('漫画文件过大！', 'error');
+                return;
+            }
+
+            if (coverFile) {
+                const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                if (!allowedImageTypes.includes(coverFile.type)) {
+                    showError('uploadError', '封面图片只支持 JPG、PNG、GIF、WebP 格式！');
+                    showNotification('封面图片格式不支持！', 'error');
+                    return;
+                }
+                if (coverFile.size > 5 * 1024 * 1024) {
+                    showError('uploadError', '封面图片大小不能超过 5MB！');
+                    showNotification('封面图片过大！', 'error');
+                    return;
+                }
+            }
+
+            hideError('uploadError');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const progressBar = document.getElementById('uploadProgress');
+            const progressFill = document.getElementById('progressFill');
+            if (uploadBtn) uploadBtn.disabled = true;
+            if (progressBar) progressBar.style.display = 'block';
+
+            try {
+                const formData = new FormData();
+                formData.append('title', title);
+                formData.append('author', author);
+                formData.append('description', description || '');
+                if (coverFile) formData.append('cover', coverFile);
+                formData.append('file', mangaFile);
+
+                const response = await fetch('/api/manga', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminState.sessionId}`
+                    },
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    showNotification('漫画上传成功！', 'success');
+
+                    // 将标签与新上传的漫画关联
+                    if (currentSelectedTags.length > 0) {
+                        await assignTagsToManga(result.manga.id, currentSelectedTags);
+                    }
+
+                    resetForm();
+                    // 上传成功后跳转到第一页
+                    currentPage = 1;
+                    loadMangaList(currentPage, currentSearch);
+                    loadDashboardData();
+                } else {
+                    const errorMessage = result.error || '上传失败';
+                    showError('uploadError', '上传失败: ' + errorMessage);
+                    showNotification('上传失败: ' + errorMessage, 'error');
+                }
+            } catch (error) {
+                console.error('上传失败:', error);
+                showError('uploadError', '上传失败: ' + error.message);
+                showNotification('上传失败: ' + error.message, 'error');
+            } finally {
+                if (uploadBtn) uploadBtn.disabled = false;
+                if (progressBar) progressBar.style.display = 'none';
+                if (progressFill) progressFill.style.width = '0%';
+            }
+        }
+
+        // 加载漫画列表（使用分页API）
+        async function loadMangaList(page = 1, search = '') {
+            try {
+                showLoading('mangaList');
+
+                // 构建查询参数
+                const params = new URLSearchParams({
+                    page: page.toString(),
+                    pageSize: itemsPerPage.toString()
+                });
+
+                if (search) {
+                    params.append('search', search);
+                }
+
+                const response = await fetch(`/api/manga?${params.toString()}`);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const result = await response.json();
+
+                // 假设API返回格式为 { data: [], total: 100, page: 1, pageSize: 10 }
+                const mangaData = result.data || [];
+                totalItems = result.total || 0;
+                currentPage = result.page || 1;
+                totalPages = Math.ceil(totalItems / itemsPerPage);
+
+                renderMangaTable(mangaData);
+                updatePaginationControls();
+                hideError('manageError');
+
+            } catch (error) {
+                console.error('加载漫画列表失败:', error);
+                showError('mangaList', '加载失败: ' + error.message);
+                showNotification('加载失败: ' + error.message, 'error');
+            }
+        }
+
+        // 显示加载状态
+        function showLoading(containerId) {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = '<tr><td colspan="7" class="loading">加载中...</td></tr>';
+            }
+        }
+
+        // 渲染漫画表格
+        function renderMangaTable(mangaList) {
+            const el = document.getElementById('mangaList');
+            if (!el) return;
+
+            if (mangaList.length === 0) {
+                el.innerHTML = '<tr><td colspan="7" class="loading">暂无漫画数据</td></tr>';
+                return;
+            }
+
+            el.innerHTML = mangaList.map(manga => {
+                const uploadTime = manga.uploadTime ? new Date(manga.uploadTime).toLocaleDateString() : '未知';
+                const fileSize = manga.fileSize ? formatFileSize(manga.fileSize) : '未知';
+                const tagsHtml = manga.tags ? manga.tags.map(tag =>
+                    `<span class="manga-tag" data-tag-id="${tag.id}">${tag.name}</span>`
+                ).join(' ') : '';
+
+                return `
+                    <tr>
+                        <td>
+                            <img src="/api/manga/${manga.id}/cover"
+                                 width="50" height="70"
+                                 style="object-fit: cover; border-radius: 4px;"
+                                 onerror="this.src='https://placehold.co/50x70/eee/999?text=封面'">
+                        </td>
+                        <td>
+                            <div style="font-weight: bold; margin-bottom: 4px;">${manga.title}</div>
+                            <div style="font-size: 12px; color: #666;">${manga.description || '暂无描述'}</div>
+                        </td>
+                        <td>${manga.author}</td>
+                        <td>${uploadTime}</td>
+                        <td>${fileSize}</td>
+                        <td><div class="manga-tags">${tagsHtml}</div></td>
+                        <td>
+                            <div class="admin-action-buttons">
+                                <button class="btn btn-info" onclick="openEditMangaModal('${manga.id}')">编辑</button>
+                                <button class="btn btn-warning" onclick="openChapterModal('${manga.id}', '${escapeQuote(manga.title)}')">章节</button>
+                                <button class="btn btn-danger" onclick="deleteManga('${manga.id}')">删除</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (!bytes) return '0 B';
+            const units = ['B', 'KB', 'MB', 'GB'];
+            let size = parseInt(bytes);
+            let unitIndex = 0;
+
+            while (size >= 1024 && unitIndex < units.length - 1) {
+                size /= 1024;
+                unitIndex++;
+            }
+
+            return `${size.toFixed(1)} ${units[unitIndex]}`;
+        }
+
+        // 转义引号（用于JavaScript字符串）
+        function escapeQuote(str) {
+            return str.replace(/'/g, "\\'");
+        }
+
+        // 分页控制函数
+        function goToPage(page) {
+            page = Math.max(1, Math.min(page, totalPages));
+            currentPage = page;
+            loadMangaList(currentPage, currentSearch);
+        }
+
+        function previousPage() {
+            goToPage(currentPage - 1);
+        }
+
+        function nextPage() {
+            goToPage(currentPage + 1);
+        }
+
+        function changePageSize(size) {
+            itemsPerPage = size;
+            currentPage = 1;
+            loadMangaList(currentPage, currentSearch);
+        }
+
+        function updatePaginationControls() {
+            // 更新页码输入框
+            const pageInput = document.getElementById('currentPageInput');
+            if (pageInput) {
+                pageInput.value = currentPage;
+                pageInput.max = totalPages;
+            }
+
+            // 更新按钮状态
+            const prevBtn = document.getElementById('prevPage');
+            const nextBtn = document.getElementById('nextPage');
+            const firstBtn = document.getElementById('firstPage');
+            const lastBtn = document.getElementById('lastPage');
+
+            if (prevBtn) prevBtn.disabled = currentPage <= 1;
+            if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
+            if (firstBtn) firstBtn.disabled = currentPage <= 1;
+            if (lastBtn) lastBtn.disabled = currentPage >= totalPages;
+
+            // 更新分页信息
+            const startItem = (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, totalItems);
+            const infoEl = document.getElementById('paginationInfo');
+            if (infoEl) {
+                infoEl.textContent = `显示 ${startItem}-${endItem} 条，共 ${totalItems} 条`;
+                if (currentSearch) {
+                    infoEl.textContent += ` (搜索: "${currentSearch}")`;
+                }
+            }
+        }
+
+        // 搜索功能
+        function searchManga() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            currentSearch = searchTerm;
+            currentPage = 1;
+            loadMangaList(currentPage, currentSearch);
+        }
+
+        function resetSearch() {
+            document.getElementById('searchInput').value = '';
+            currentSearch = '';
+            currentPage = 1;
+            loadMangaList(currentPage, '');
+        }
+
+        async function deleteManga(mangaId) {
+            if (!confirm('确定要删除这个漫画吗？此操作不可恢复！')) return;
+
+            try {
+                const response = await fetch(`/api/manga/${mangaId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminState.sessionId}`
+                    }
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    showNotification('漫画删除成功！', 'success');
+                    // 重新加载当前页数据
+                    loadMangaList(currentPage, currentSearch);
+                    loadDashboardData();
+                } else {
+                    const errorMessage = result.error || '删除失败';
+                    showError('manageError', '删除失败: ' + errorMessage);
+                    showNotification('删除失败: ' + errorMessage, 'error');
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                showError('manageError', '删除失败: ' + error.message);
+                showNotification('删除失败: ' + error.message, 'error');
+            }
+        }
+
+        function openChapterModal(mangaId, mangaTitle) {
+            currentMangaId = mangaId;
+            document.getElementById('mangaTitle').textContent = mangaTitle;
+            document.getElementById('chapterModal').style.display = 'block';
+            loadChapters(mangaId);
+        }
+
+        function closeChapterModal() {
+            document.getElementById('chapterModal').style.display = 'none';
+            document.getElementById('chapterTitle').value = '';
+            document.getElementById('chapterNumber').value = '';
+            document.getElementById('chapterFile').value = '';
+        }
+
+        function loadChapters(mangaId) {
+            fetch(`/api/manga/${mangaId}/chapters`)
+                .then(response => response.json())
+                .then(chapters => {
+                    const container = document.getElementById('chapterList');
+                    container.innerHTML = '';
+                    if (chapters.length === 0) {
+                        container.innerHTML = '<p>暂无章节</p>';
+                        return;
+                    }
+
+                    // 按章节编号排序
+                    const sortedChapters = chapters.sort((a, b) => a.number - b.number);
+
+                    sortedChapters.forEach(chapter => {
+                        const item = document.createElement('div');
+                        item.className = 'chapter-item';
+                        item.innerHTML = `
+                            <div class="chapter-info">
+                                <strong>${chapter.title}</strong> (第${chapter.number}章)
+                                <br><small>${new Date(chapter.uploadTime).toLocaleDateString()}</small>
+                            </div>
+                            <div class="chapter-actions">
+                                <button class="btn btn-warning" onclick="openEditChapterModal('${chapter.id}', '${chapter.title}', ${chapter.number})">编辑</button>
+                                <button class="btn btn-danger" onclick="deleteChapter('${chapter.id}')">删除</button>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
+                })
+                .catch(error => {
+                    console.error('加载章节失败:', error);
+                    showNotification('加载章节失败', 'error');
+                });
+        }
+
+        function addChapter() {
+            const title = document.getElementById('chapterTitle').value;
+            const number = document.getElementById('chapterNumber').value;
+            const file = document.getElementById('chapterFile').files[0];
+            if (!title || !number || !file) {
+                showNotification('请填写所有必填字段', 'error');
+                return;
+            }
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('number', number);
+            formData.append('chapterFile', file);
+            fetch(`/api/manga/${currentMangaId}/chapters`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${adminState.sessionId}`
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('章节添加成功', 'success');
+                    document.getElementById('chapterTitle').value = '';
+                    document.getElementById('chapterNumber').value = '';
+                    document.getElementById('chapterFile').value = '';
+                    loadChapters(currentMangaId);
+                    loadMangaList(currentPage, currentSearch);
+                    loadDashboardData();
+                } else {
+                    showNotification(data.error || '添加失败', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('添加章节失败:', error);
+                showNotification('添加章节失败: ' + error.message, 'error');
+            });
+        }
+
+        function openEditChapterModal(chapterId, title, number) {
+            document.getElementById('editChapterId').value = chapterId;
+            document.getElementById('editChapterTitle').value = title;
+            document.getElementById('editChapterNumber').value = number;
+            document.getElementById('editChapterModal').style.display = 'block';
+        }
+
+        function closeEditChapterModal() {
+            document.getElementById('editChapterModal').style.display = 'none';
+        }
+
+        function updateChapter() {
+            const chapterId = document.getElementById('editChapterId').value;
+            const title = document.getElementById('editChapterTitle').value;
+            const number = document.getElementById('editChapterNumber').value;
+            if (!title || !number) {
+                showNotification('请填写所有必填字段', 'error');
+                return;
+            }
+            fetch(`/api/manga/${currentMangaId}/chapters/${chapterId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${adminState.sessionId}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ title, number })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('章节更新成功', 'success');
+                    closeEditChapterModal();
+                    loadChapters(currentMangaId);
+                    loadMangaList(currentPage, currentSearch);
+                    loadDashboardData();
+                } else {
+                    showNotification(data.error || '更新失败', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('更新章节失败:', error);
+                showNotification('更新章节失败: ' + error.message, 'error');
+            });
+        }
+
+        function deleteChapter(chapterId) {
+            if (!confirm('确定要删除这个章节吗？此操作不可恢复！')) return;
+            fetch(`/api/manga/${currentMangaId}/chapters/${chapterId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${adminState.sessionId}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('章节删除成功', 'success');
+                    loadChapters(currentMangaId);
+                    loadMangaList(currentPage, currentSearch);
+                    loadDashboardData();
+                } else {
+                    showNotification(data.error || '删除失败', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('删除章节失败:', error);
+                showNotification('删除章节失败: ' + error.message, 'error');
+            });
+        }
+
+        function resetForm() {
+            const form = document.getElementById('uploadForm');
+            if (form) form.reset();
+            ['coverInfo', 'fileInfo'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.style.display = 'none';
+                    el.innerHTML = '';
+                }
+            });
+            hideError('uploadError');
+            ['coverUploadArea', 'fileUploadArea'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.remove('dragover');
+            });
+            // 重置标签选择
+            currentSelectedTags = [];
+            const selectedTagsContainer = document.getElementById('selectedTags');
+            if (selectedTagsContainer) selectedTagsContainer.innerHTML = '';
+            loadAllTags(); // 重新加载标签选择器
+        }
+
+        async function logout() {
+            if (!confirm('确定要登出吗？')) return;
+            try {
+                const response = await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminState.sessionId}`
+                    }
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    localStorage.removeItem('admin_session_id');
+                    window.location.href = '/login.html';
+                } else {
+                    showNotification('登出失败: ' + (result.error || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('登出失败:', error);
+                showNotification('登出失败: ' + error.message, 'error');
+            }
+        }
+
+        async function openEditMangaModal(mangaId) {
+            try {
+                const response = await fetch(`/api/manga/${mangaId}`);
+                const manga = await response.json();
+                if (!response.ok) throw new Error(manga.error || '获取漫画信息失败');
+                document.getElementById('editMangaId').value = manga.id;
+                document.getElementById('editMangaTitle').value = manga.title;
+                document.getElementById('editMangaAuthor').value = manga.author;
+                document.getElementById('editMangaDescription').value = manga.description || '';
+                document.getElementById('editMangaCover').value = '';
+
+                // 填充编辑漫画时的标签
+                const editTagContainer = document.getElementById('editMangaTags');
+                if (editTagContainer) {
+                    editTagContainer.innerHTML = '';
+                    if (manga.tags && manga.tags.length > 0) {
+                        manga.tags.forEach(tag => {
+                            const tagElement = document.createElement('span');
+                            tagElement.className = 'manga-tag';
+                            tagElement.innerHTML = `${tag.name} <span class="remove-tag" onclick="removeTagFromManga('${manga.id}', ${tag.id})">×</span>`;
+                            tagElement.setAttribute('data-tag-id', tag.id);
+                            editTagContainer.appendChild(tagElement);
+                        });
+                    }
+                }
+
+                document.getElementById('editMangaModal').style.display = 'block';
+                loadAllTags(); // 加载所有标签以供选择
+            } catch (error) {
+                console.error('打开编辑模态框失败:', error);
+                showNotification('加载失败: ' + error.message, 'error');
+            }
+        }
+
+        function closeEditMangaModal() {
+            document.getElementById('editMangaModal').style.display = 'none';
+        }
+
+        async function updateManga() {
+            const mangaId = document.getElementById('editMangaId').value;
+            const title = document.getElementById('editMangaTitle').value;
+            const author = document.getElementById('editMangaAuthor').value;
+            const description = document.getElementById('editMangaDescription').value;
+            const coverFile = document.getElementById('editMangaCover').files[0];
+
+            if (!title || !author) {
+                showNotification('请填写漫画名称和作者！', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('author', author);
+            formData.append('description', description);
+            if (coverFile) formData.append('cover', coverFile);
+
+            try {
+                const response = await fetch(`/api/manga/${mangaId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${adminState.sessionId}`
+                    },
+                    body: formData
+                });
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    showNotification('漫画信息更新成功！', 'success');
+                    closeEditMangaModal();
+                    loadMangaList(currentPage, currentSearch);
+                    loadDashboardData();
+                } else {
+                    showNotification('更新失败: ' + (result.error || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('更新漫画失败:', error);
+                showNotification('更新失败: ' + error.message, 'error');
+            }
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            const modals = ['chapterModal', 'editChapterModal', 'editMangaModal', 'namespaceModal'];
+            modals.forEach(id => {
+                const modal = document.getElementById(id);
+                if (event.target === modal) {
+                    if (id === 'chapterModal') closeChapterModal();
+                    else if (id === 'editChapterModal') closeEditChapterModal();
+                    else if (id === 'editMangaModal') closeEditMangaModal();
+                    else if (id === 'namespaceModal') closeNamespaceModal();
+                }
+            });
+        };
+
+        // 标签系统功能
+        async function loadTagNamespaces() {
+            try {
+                const response = await fetch('/api/tag/namespaces');
+                if (!response.ok) throw new Error('加载标签分类失败');
+                const namespaces = await response.json();
+                adminState.namespaces = namespaces;
+
+                const namespaceSelect = document.getElementById('namespaceSelect');
+                if (namespaceSelect) {
+                    namespaceSelect.innerHTML = '<option value="">选择分类...</option>';
+                    namespaces.forEach(ns => {
+                        const option = document.createElement('option');
+                        option.value = ns.id;
+                        option.textContent = ns.display_name;
+                        namespaceSelect.appendChild(option);
+                    });
+                }
+
+                const tagSelect = document.getElementById('tagSelect');
+                if (tagSelect) {
+                    tagSelect.innerHTML = '<option value="">选择标签...</option>';
+                    namespaces.forEach(ns => {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = ns.display_name;
+                        tagSelect.appendChild(optgroup);
+                    });
+                }
+
+                const editTagSelect = document.getElementById('editTagSelect');
+                if (editTagSelect) {
+                    editTagSelect.innerHTML = '<option value="">选择标签...</option>';
+                    namespaces.forEach(ns => {
+                        const optgroup = document.createElement('optgroup');
+                        optgroup.label = ns.display_name;
+                        editTagSelect.appendChild(optgroup);
+                    });
+                }
+
+                loadAllTags();
+            } catch (error) {
+                console.error('加载标签分类失败:', error);
+                showNotification('加载标签分类失败: ' + error.message, 'error');
+            }
+        }
+
+        async function loadAllTags() {
+            try {
+                const response = await fetch('/api/tags');
+                if (!response.ok) throw new Error('加载标签失败');
+                const tags = await response.json();
+                adminState.tags = tags;
+
+                const tagSelect = document.getElementById('tagSelect');
+                if (tagSelect) {
+                    // 清空现有的选项组
+                    Array.from(tagSelect.children).forEach(child => {
+                        if (child.tagName === 'OPTGROUP') {
+                            child.innerHTML = '';
+                        }
+                    });
+
+                    tags.forEach(tag => {
+                        const namespaceOptgroup = Array.from(tagSelect.children).find(optgroup =>
+                            optgroup.tagName === 'OPTGROUP' &&
+                            optgroup.label === adminState.namespaces.find(ns => ns.id === tag.namespace_id)?.display_name
+                        );
+
+                        if (namespaceOptgroup) {
+                            const option = document.createElement('option');
+                            option.value = tag.id;
+                            option.textContent = tag.name;
+                            namespaceOptgroup.appendChild(option);
+                        }
+                    });
+                }
+
+                const editTagSelect = document.getElementById('editTagSelect');
+                if (editTagSelect) {
+                    // 清空现有的选项组
+                    Array.from(editTagSelect.children).forEach(child => {
+                        if (child.tagName === 'OPTGROUP') {
+                            child.innerHTML = '';
+                        }
+                    });
+
+                    tags.forEach(tag => {
+                        const namespaceOptgroup = Array.from(editTagSelect.children).find(optgroup =>
+                            optgroup.tagName === 'OPTGROUP' &&
+                            optgroup.label === adminState.namespaces.find(ns => ns.id === tag.namespace_id)?.display_name
+                        );
+
+                        if (namespaceOptgroup) {
+                            const option = document.createElement('option');
+                            option.value = tag.id;
+                            option.textContent = tag.name;
+                            namespaceOptgroup.appendChild(option);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('加载标签失败:', error);
+                showNotification('加载标签失败: ' + error.message, 'error');
+            }
+        }
+
+        async function loadTags() {
+            const namespaceId = document.getElementById('namespaceSelect').value;
+            try {
+                let url = '/api/tags';
+                if (namespaceId) {
+                    const namespace = adminState.namespaces.find(ns => ns.id === parseInt(namespaceId));
+                    if (namespace) {
+                        url += `?namespace=${namespace.name}`;
+                    }
+                }
+
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('加载标签失败');
+                const tags = await response.json();
+
+                const container = document.getElementById('tagList');
+                if (!container) return;
+                container.innerHTML = '';
+
+                if (tags.length === 0) {
+                    container.innerHTML = '<p>暂无标签</p>';
+                    return;
+                }
+
+                tags.forEach(tag => {
+                    const item = document.createElement('div');
+                    item.className = 'tag-item';
+                    const namespace = adminState.namespaces.find(ns => ns.id === tag.namespace_id);
+                    item.innerHTML = `
+                        <div class="tag-info">
+                            <strong>${tag.name}</strong>
+                            <small>(${namespace?.display_name || '未分类'})</small>
+                            <br><small>${tag.description || '无描述'}</small>
+                        </div>
+                        <div class="tag-actions">
+                            <button class="btn btn-danger" onclick="deleteTag(${tag.id})">删除</button>
+                        </div>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (error) {
+                console.error('加载标签失败:', error);
+                showNotification('加载标签失败: ' + error.message, 'error');
+            }
+        }
+
+        async function createTag() {
+            const namespaceId = document.getElementById('namespaceSelect').value;
+            const name = document.getElementById('tagName').value;
+            const slug = document.getElementById('tagSlug').value;
+            const description = document.getElementById('tagDescription').value;
+
+            if (!namespaceId || !name || !slug) {
+                showNotification('请填写必填字段！', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/tags', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminState.sessionId}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ namespace_id: parseInt(namespaceId), name, slug, description })
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    showNotification('标签创建成功！', 'success');
+                    document.getElementById('tagName').value = '';
+                    document.getElementById('tagSlug').value = '';
+                    document.getElementById('tagDescription').value = '';
+                    loadTags(); // 重新加载当前分类的标签
+                    loadAllTags(); // 更新所有标签
+                } else {
+                    showNotification('创建失败: ' + (result.error || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('创建标签失败:', error);
+                showNotification('创建标签失败: ' + error.message, 'error');
+            }
+        }
+
+        async function createNamespace() {
+            document.getElementById('namespaceModal').style.display = 'block';
+        }
+
+        function closeNamespaceModal() {
+            document.getElementById('namespaceModal').style.display = 'none';
+            document.getElementById('namespaceName').value = '';
+            document.getElementById('namespaceDisplayName').value = '';
+            document.getElementById('namespaceDescription').value = '';
+        }
+
+        async function createNamespaceFromModal() {
+            const name = document.getElementById('namespaceName').value;
+            const displayName = document.getElementById('namespaceDisplayName').value;
+            const description = document.getElementById('namespaceDescription').value;
+
+            if (!name || !displayName) {
+                showNotification('请填写分类名称和显示名称！', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/tag/namespaces', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminState.sessionId}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, display_name: displayName, description })
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    showNotification('标签分类创建成功！', 'success');
+                    closeNamespaceModal();
+                    loadTagNamespaces(); // 重新加载分类
+                } else {
+                    showNotification('创建失败: ' + (result.error || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('创建标签分类失败:', error);
+                showNotification('创建标签分类失败: ' + error.message, 'error');
+            }
+        }
+
+        async function deleteTag(tagId) {
+            if (!confirm('确定要删除这个标签吗？此操作不可恢复！')) return;
+            try {
+                const response = await fetch(`/api/tags/${tagId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminState.sessionId}`
+                    }
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    showNotification('标签删除成功！', 'success');
+                    loadTags(); // 重新加载标签
+                    loadAllTags(); // 更新所有标签
+                    loadMangaList(currentPage, currentSearch); // 更新漫画列表
+                } else {
+                    showNotification('删除失败: ' + (result.error || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('删除标签失败:', error);
+                showNotification('删除标签失败: ' + error.message, 'error');
+            }
+        }
+
+        function addTagToManga() {
+            const tagSelect = document.getElementById('tagSelect');
+            const tagId = parseInt(tagSelect.value);
+            if (!tagId) {
+                showNotification('请选择一个标签！', 'error');
+                return;
+            }
+
+            const tag = adminState.tags.find(t => t.id === tagId);
+            if (!tag) {
+                showNotification('标签不存在！', 'error');
+                return;
+            }
+
+            // 检查是否已添加该标签
+            if (currentSelectedTags.includes(tagId)) {
+                showNotification('该标签已添加！', 'error');
+                return;
+            }
+
+            // 添加到当前选择的标签列表
+            currentSelectedTags.push(tagId);
+
+            // 在UI中显示标签
+            const selectedTagsContainer = document.getElementById('selectedTags');
+            const tagElement = document.createElement('span');
+            tagElement.className = 'manga-tag';
+            tagElement.innerHTML = `${tag.name} <span class="remove-tag" onclick="removeTagFromCurrentList(${tagId})">×</span>`;
+            tagElement.setAttribute('data-tag-id', tagId);
+            selectedTagsContainer.appendChild(tagElement);
+        }
+
+        function removeTagFromCurrentList(tagId) {
+            // 从当前选择的标签列表中移除
+            currentSelectedTags = currentSelectedTags.filter(id => id !== tagId);
+
+            // 从UI中移除标签元素
+            const selectedTagsContainer = document.getElementById('selectedTags');
+            const tagElement = selectedTagsContainer.querySelector(`[data-tag-id="${tagId}"]`);
+            if (tagElement) {
+                selectedTagsContainer.removeChild(tagElement);
+            }
+        }
+
+        async function assignTagsToManga(mangaId, tagIds) {
+            try {
+                const promises = tagIds.map(tagId =>
+                    fetch(`/api/manga/${mangaId}/tags/${tagId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${adminState.sessionId}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({})
+                    })
+                );
+
+                const responses = await Promise.all(promises);
+                const results = await Promise.all(responses.map(r => r.json()));
+
+                const hasError = results.some(result => !result.success);
+                if (hasError) {
+                    showNotification('部分标签分配失败！', 'error');
+                } else {
+                    showNotification('标签分配成功！', 'success');
+                }
+            } catch (error) {
+                console.error('分配标签失败:', error);
+                showNotification('分配标签失败: ' + error.message, 'error');
+            }
+        }
+
+        function addTagToEditManga() {
+            const tagSelect = document.getElementById('editTagSelect');
+            const tagId = parseInt(tagSelect.value);
+            if (!tagId) {
+                showNotification('请选择一个标签！', 'error');
+                return;
+            }
+
+            const tag = adminState.tags.find(t => t.id === tagId);
+            if (!tag) {
+                showNotification('标签不存在！', 'error');
+                return;
+            }
+
+            // 在UI中显示标签
+            const editTagContainer = document.getElementById('editMangaTags');
+            const existingTag = editTagContainer.querySelector(`[data-tag-id="${tagId}"]`);
+            if (existingTag) {
+                showNotification('该标签已存在！', 'error');
+                return;
+            }
+
+            const tagElement = document.createElement('span');
+            tagElement.className = 'manga-tag';
+            tagElement.innerHTML = `${tag.name} <span class="remove-tag" onclick="removeTagFromManga('${document.getElementById('editMangaId').value}', ${tagId})">×</span>`;
+            tagElement.setAttribute('data-tag-id', tagId);
+            editTagContainer.appendChild(tagElement);
+
+            // 添加标签到漫画
+            assignTagToManga(document.getElementById('editMangaId').value, tagId);
+        }
+
+        async function removeTagFromManga(mangaId, tagId) {
+            try {
+                const response = await fetch(`/api/manga/${mangaId}/tags/${tagId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${adminState.sessionId}`
+                    }
+                });
+
+                const result = await response.json();
+                if (response.ok && result.success) {
+                    showNotification('标签移除成功！', 'success');
+                    // 从UI中移除标签
+                    const editTagContainer = document.getElementById('editMangaTags');
+                    const tagElement = editTagContainer.querySelector(`[data-tag-id="${tagId}"]`);
+                    if (tagElement) {
+                        editTagContainer.removeChild(tagElement);
+                    }
+                    loadMangaList(currentPage, currentSearch); // 更新漫画列表
+                } else {
+                    showNotification('移除失败: ' + (result.error || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('移除标签失败:', error);
+                showNotification('移除标签失败: ' + error.message, 'error');
+            }
+        }
+
+        async function assignTagToManga(mangaId, tagId) {
+            try {
+                const response = await fetch(`/api/manga/${mangaId}/tags/${tagId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${adminState.sessionId}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    showNotification('添加标签失败: ' + (result.error || '未知错误'), 'error');
+                }
+            } catch (error) {
+                console.error('添加标签失败:', error);
+                showNotification('添加标签失败: ' + error.message, 'error');
+            }
+        }
+    </script>
+
+</body>
+</html>

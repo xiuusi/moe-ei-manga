@@ -1,0 +1,891 @@
+/* ====================================
+ *   全局与基础样式
+ *   ==================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Microsoft YaHei', Arial, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* ====================================
+ *   页头 (Header)
+ *   ==================================== */
+.header {
+    background-color: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 15px 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #ff6b6b;
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    gap: 30px;
+}
+
+.nav-menu a {
+    text-decoration: none;
+    color: #666;
+    font-size: 16px;
+    transition: color 0.3s;
+}
+
+.nav-menu a:hover,
+.nav-menu a.active {
+    color: #ff6b6b;
+}
+
+.admin-link {
+    color: #ff6b6b !important;
+    font-weight: bold;
+}
+
+/* ====================================
+ *   漫画详情页样式 - 修复版
+ *   ==================================== */
+.manga-detail-container {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 0 20px;
+    flex: 1;
+}
+
+.manga-detail-content {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    padding: 30px;
+}
+
+.manga-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 30px;
+    align-items: flex-start;
+}
+
+.manga-cover-section {
+    flex: 1;
+    min-width: 300px;
+}
+
+.manga-cover {
+    width: 100%;
+    max-width: 300px;
+    aspect-ratio: 2/3;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.manga-info-section {
+    flex: 2;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    height: 100%; /* 新增 */
+}
+
+/* 修复：使用更具体的选择器避免样式冲突 */
+.manga-detail-content .manga-title {
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+    line-height: 1.3; /* 新增 */
+    display: block; /* 覆盖卡片标题的样式 */
+    -webkit-line-clamp: unset; /* 移除行数限制 */
+    overflow: visible; /* 移除溢出隐藏 */
+}
+
+.manga-detail-content .manga-author {
+    font-size: 1.2rem;
+    color: #666;
+    margin-bottom: 20px;
+    white-space: normal; /* 覆盖卡片作者样式 */
+    overflow: visible; /* 移除溢出隐藏 */
+}
+
+.manga-detail-content .manga-description {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #555;
+    margin-bottom: 30px;
+    flex-grow: 1;
+}
+
+.manga-actions {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.read-button {
+    padding: 15px 30px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    border: none;
+    background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+    color: white;
+    flex: 1;
+}
+
+.read-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.read-button:active {
+    transform: translateY(0);
+}
+
+.chapters-section {
+    margin-top: 40px;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 20px;
+    color: #333;
+    border-bottom: 2px solid #eee;
+    padding-bottom: 10px;
+}
+
+.chapters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.chapter-card {
+    background: #f9f9f9;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s, box-shadow 0.3s;
+    display: flex; /* 新增 */
+    justify-content: space-between; /* 新增 */
+    align-items: center; /* 新增 */
+}
+
+.chapter-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.chapter-info h3 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+    color: #333;
+    margin-bottom: 0; /* 新增：移除底部边距 */
+}
+
+.chapter-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn {
+    padding: 8px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    background: #ff6b6b;
+    color: white;
+}
+
+.btn:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+.loading {
+    text-align: center;
+    padding: 50px;
+    color: #666;
+    font-size: 18px;
+}
+
+.error-message {
+    text-align: center;
+    padding: 50px;
+    color: #e74c3c;
+    font-size: 18px;
+}
+
+.error-message a {
+    color: #ff6b6b;
+    text-decoration: none;
+}
+
+.error-message a:hover {
+    text-decoration: underline;
+}
+
+
+/* ====================================
+ *   内容区域 (Content Section)
+ *   ==================================== */
+.content-section {
+    background-color: #f5f5f5;
+    padding: 50px 0 80px;
+    flex: 1;
+    border-top-left-radius: 40px;
+    border-top-right-radius: 40px;
+    margin-top: -40px;
+    position: relative;
+    z-index: 10;
+    opacity: 0;
+    transform: translateY(50px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.content-section.active {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.content-section.active .section-title {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* ====================================
+ *   标签与分类 (Tags & Namespace)
+ *   ==================================== */
+.namespace-tabs,
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    justify-content: center;
+}
+
+.namespace-tab,
+.tag-item {
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.namespace-tab {
+    background-color: #e0e0e0;
+}
+
+.namespace-tab.active,
+.namespace-tab:hover {
+    background-color: #ff6b6b;
+    color: white;
+}
+
+.tag-item {
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.tag-item:hover {
+    background-color: #e0e0e0;
+    transform: translateY(-2px);
+}
+
+.tag-item.type { background-color: #ffebee; color: #c62828; }
+.tag-item.artist { background-color: #e8f5e9; color: #2e7d32; }
+.tag-item.character { background-color: #e3f2fd; color: #1565c0; }
+.tag-item.main { background-color: #fff3e0; color: #ef6c00; }
+.tag-item.sub { background-color: #f3e5f5; color: #7b1fa2; }
+
+.tag-count {
+    font-size: 0.8rem;
+    color: #666;
+    background-color: rgba(0,0,0,0.1);
+    border-radius: 10px;
+    padding: 2px 6px;
+}
+
+/* ====================================
+ *   漫画卡片网格 (Manga Grid)
+ *   ==================================== */
+.manga-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 25px;
+}
+
+.manga-card {
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+}
+
+.content-section.active .manga-card {
+    animation: cardPopIn 0.5s ease forwards;
+}
+
+.manga-card:hover {
+    transform: translateY(-8px) scale(1.02) !important;
+    box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+}
+
+@keyframes cardPopIn {
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.content-section.active .manga-card:nth-child(1) { animation-delay: 0.1s; }
+.content-section.active .manga-card:nth-child(2) { animation-delay: 0.15s; }
+.content-section.active .manga-card:nth-child(3) { animation-delay: 0.2s; }
+.content-section.active .manga-card:nth-child(4) { animation-delay: 0.25s; }
+.content-section.active .manga-card:nth-child(5) { animation-delay: 0.3s; }
+.content-section.active .manga-card:nth-child(6) { animation-delay: 0.35s; }
+.content-section.active .manga-card:nth-child(7) { animation-delay: 0.4s; }
+.content-section.active .manga-card:nth-child(8) { animation-delay: 0.45s; }
+.content-section.active .manga-card:nth-child(9) { animation-delay: 0.5s; }
+.content-section.active .manga-card:nth-child(10) { animation-delay: 0.55s; }
+
+.manga-info {
+    padding: 15px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 80px;
+}
+
+.manga-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+    flex-grow: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+}
+
+.manga-author {
+    color: #666;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ====================================
+ *   分页 (Pagination)
+ *   ==================================== */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 30px;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.pagination button {
+    padding: 8px 14px;
+    border: 1px solid #ddd;
+    background: white;
+    color: #333;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.pagination button:hover:not(:disabled),
+.pagination button.active {
+    background-color: #ff6b6b;
+    color: white;
+    border-color: #ff6b6b;
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ====================================
+ *   页脚 (Footer)
+ *   ==================================== */
+.footer {
+    background-color: #333;
+    color: white;
+    text-align: center;
+    padding: 30px 20px 20px;
+}
+
+.footer p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+/* ====================================
+ *   状态提示 (Loading / No Content)
+ *   ==================================== */
+.no-manga {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+    font-size: 18px;
+    opacity: 0;
+    animation: fadeInText 0.6s ease forwards;
+    grid-column: 1 / -1;
+}
+
+@keyframes fadeInText {
+    to { opacity: 1; }
+}
+
+/* ====================================
+ *   响应式设计
+ *   ==================================== */
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .nav-menu {
+        gap: 15px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .content-section {
+        padding: 40px 0 60px;
+        border-top-left-radius: 30px;
+        border-top-right-radius: 30px;
+        margin-top: -30px;
+    }
+
+    .manga-grid {
+        gap: 20px;
+    }
+
+    .namespace-tabs,
+    .tags-container {
+        justify-content: flex-start;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        white-space: nowrap;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .namespace-tabs::-webkit-scrollbar,
+    .tags-container::-webkit-scrollbar {
+        display: none;
+    }
+
+    /* 漫画详情页响应式 */
+    .manga-detail-content {
+        padding: 20px;
+    }
+
+    .manga-header {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .manga-cover {
+        max-width: 250px;
+    }
+
+    .manga-title {
+        font-size: 1.5rem;
+        text-align: center;
+    }
+
+    .manga-author {
+        text-align: center;
+        font-size: 1.1rem;
+    }
+
+    .manga-description {
+        font-size: 0.95rem;
+    }
+
+    .manga-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .read-button {
+        padding: 12px 25px;
+        font-size: 1rem;
+    }
+
+    .chapters-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+    }
+
+    .chapter-card {
+        padding: 15px;
+    }
+
+    .chapter-info h3 {
+        font-size: 1.1rem;
+    }
+
+    .footer p {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* 强制两列布局 */
+    .manga-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+
+    .pagination button {
+        padding: 6px 10px;
+        font-size: 13px;
+    }
+
+    /* 漫画详情页响应式 */
+    .manga-detail-content {
+        padding: 15px;
+    }
+
+    .manga-cover {
+        max-width: 200px;
+    }
+
+    .manga-title {
+        font-size: 1.3rem;
+    }
+
+    .read-button {
+        padding: 10px 20px;
+        font-size: 0.95rem;
+    }
+
+    .chapters-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .chapter-info h3 {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 374px) {
+    .container {
+        padding: 0 15px;
+    }
+
+    .manga-info {
+        padding: 10px 8px;
+        min-height: 60px;
+    }
+
+    .manga-title {
+        font-size: 0.8rem;
+        line-height: 1.3;
+        -webkit-line-clamp: 3;
+    }
+
+    .manga-author {
+        font-size: 0.7rem;
+    }
+
+    .pagination button {
+        padding: 5px 8px;
+        font-size: 11px;
+        min-width: 24px;
+        gap: 5px;
+    }
+
+    .namespace-tabs,
+    .tags-container {
+        gap: 8px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .namespace-tab,
+    .tag-item {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+
+    .tag-count {
+        padding: 1px 5px;
+        font-size: 0.75rem;
+    }
+
+    .section-title {
+        font-size: 1.6rem;
+        margin-bottom: 20px;
+    }
+
+    .no-manga, .loading {
+        padding: 40px 15px;
+        font-size: 16px;
+    }
+
+    .footer p {
+        font-size: 13px;
+    }
+}
+
+/* ====================================
+ *   加载动画样式
+ *   ==================================== */
+
+/* 骨架屏加载动画 */
+.loading-skeleton {
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+.skeleton-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    margin-bottom: 30px;
+    align-items: flex-start;
+}
+
+.skeleton-cover {
+    width: 300px;
+    height: 450px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 8px;
+}
+
+.skeleton-info {
+    flex: 2;
+    min-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.skeleton-title {
+    width: 80%;
+    height: 40px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-author {
+    width: 60%;
+    height: 24px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-description {
+    width: 100%;
+    height: 16px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+.skeleton-description.short {
+    width: 70%;
+}
+
+.skeleton-button {
+    width: 200px;
+    height: 50px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.skeleton-chapters {
+    margin-top: 40px;
+}
+
+.skeleton-section-title {
+    width: 200px;
+    height: 32px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.skeleton-chapter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.skeleton-chapter {
+    height: 80px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 8px;
+}
+
+/* 加载动画 */
+@keyframes loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* 原有的加载状态样式保持，用于错误情况 */
+.loading {
+    text-align: center;
+    padding: 50px;
+    color: #666;
+    font-size: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* 旋转加载动画 */
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #ff6b6b;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.error-message {
+    text-align: center;
+    padding: 50px;
+    color: #e74c3c;
+    font-size: 18px;
+}
+
+.error-message a {
+    color: #ff6b6b;
+    text-decoration: none;
+}
+
+.error-message a:hover {
+    text-decoration: underline;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .skeleton-cover {
+        width: 250px;
+        height: 375px;
+    }
+
+    .skeleton-chapter-grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .skeleton-cover {
+        width: 200px;
+        height: 300px;
+    }
+
+    .skeleton-chapter-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .skeleton-title {
+        height: 32px;
+    }
+
+    .skeleton-button {
+        width: 150px;
+        height: 45px;
+    }
+}
+

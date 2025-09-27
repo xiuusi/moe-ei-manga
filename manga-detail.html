@@ -1,0 +1,358 @@
+<!-- manga-detail.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">漫画详情 | MangaReader</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* 标签样式 */
+        .manga-tags {
+            margin: 15px 0;
+        }
+
+        .tags-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .tag-item {
+            background-color: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 16px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: #666;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .tag-item:hover {
+            background-color: #e0e0e0;
+            color: #333;
+            transform: translateY(-1px);
+        }
+
+        .tag-namespace {
+            font-weight: 500;
+            margin-right: 4px;
+            color: #888;
+        }
+
+        .no-tags {
+            color: #999;
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        /* 标签分类样式 */
+        .tag-namespace-type .tag-item {
+            background-color: #e3f2fd;
+            border-color: #90caf9;
+            color: #1565c0;
+        }
+
+        .tag-namespace-artist .tag-item {
+            background-color: #f3e5f5;
+            border-color: #ce93d8;
+            color: #7b1fa2;
+        }
+
+        .tag-namespace-character .tag-item {
+            background-color: #e8f5e9;
+            border-color: #a5d6a7;
+            color: #2e7d32;
+        }
+
+        .tag-namespace-main .tag-item {
+            background-color: #fff3e0;
+            border-color: #ffcc80;
+            color: #ef6c00;
+        }
+
+        .tag-namespace-sub .tag-item {
+            background-color: #fafafa;
+            border-color: #e0e0e0;
+            color: #757575;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">hei——！man</div>
+                <ul class="nav-menu">
+                    <li><a href="/">首页</a></li>
+                    <li><a href="/search.html">搜索</a></li>
+                    <li><a href="/tag.html">标签</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+    <main class="manga-detail-container">
+        <div class="manga-detail-content">
+            <div id="mangaDetailContent">
+                <!-- 骨架屏加载动画 -->
+                <div class="loading-skeleton">
+                    <div class="skeleton-header">
+                        <div class="skeleton-cover"></div>
+                        <div class="skeleton-info">
+                            <div class="skeleton-title"></div>
+                            <div class="skeleton-author"></div>
+                            <div class="skeleton-description"></div>
+                            <div class="skeleton-description"></div>
+                            <div class="skeleton-description short"></div>
+                            <div class="skeleton-button"></div>
+                        </div>
+                    </div>
+                    <div class="skeleton-chapters">
+                        <div class="skeleton-section-title"></div>
+                        <div class="skeleton-chapter-grid">
+                            <div class="skeleton-chapter"></div>
+                            <div class="skeleton-chapter"></div>
+                            <div class="skeleton-chapter"></div>
+                            <div class="skeleton-chapter"></div>
+                            <div class="skeleton-chapter"></div>
+                            <div class="skeleton-chapter"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 使用各种ai杂交制作的漫画网站，仅供学习交流</p>
+            <p>联系邮箱：</p>
+        </div>
+    </footer>
+    <script>
+        function getMangaId() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        async function loadMangaDetail() {
+            const mangaId = getMangaId();
+            if (!mangaId) {
+                document.getElementById('mangaDetailContent').innerHTML = `
+                    <div class="error-message">
+                        <p>缺少漫画ID参数</p>
+                        <p><a href="/">返回首页</a></p>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const mangaResponse = await fetch(`/api/manga/${mangaId}`);
+                if (!mangaResponse.ok) throw new Error(`HTTP error! status: ${mangaResponse.status}`);
+
+                const manga = await mangaResponse.json();
+
+                const chaptersResponse = await fetch(`/api/manga/${mangaId}/chapters`);
+                if (!chaptersResponse.ok) throw new Error(`HTTP error! status: ${chaptersResponse.status}`);
+
+                const chapters = await chaptersResponse.json();
+
+                document.getElementById('pageTitle').textContent = `${manga.title} | MangaReader`;
+
+                renderMangaDetail(manga, chapters);
+            } catch (error) {
+                console.error('加载漫画详情失败:', error);
+                document.getElementById('mangaDetailContent').innerHTML = `
+                    <div class="error-message">
+                        <p>加载失败: ${error.message}</p>
+                        <p>请确保服务器正在运行</p>
+                        <p><a href="/">返回首页</a></p>
+                    </div>
+                `;
+            }
+        }
+
+        function getReadingProgress(mangaId) {
+            const data = localStorage.getItem(`readingProgress_${mangaId}`);
+            return data ? JSON.parse(data) : null;
+        }
+
+        function setReadingProgress(mangaId, chapterId, pageNum) {
+            const progress = {
+                chapterId: chapterId,
+                pageNum: pageNum,
+                timestamp: Date.now()
+            };
+            localStorage.setItem(`readingProgress_${mangaId}`, JSON.stringify(progress));
+        }
+
+        // 命名空间ID到名称的映射
+        const namespaceIdToName = {
+            1: 'type',
+            2: 'artist',
+            3: 'character',
+            4: 'main',
+            5: 'sub'
+        };
+
+        // 命名空间显示名称映射
+        const namespaceDisplayMap = {
+            'type': '类型',
+            'artist': '作者',
+            'character': '角色',
+            'main': '主标签',
+            'sub': '副标签'
+        };
+
+        // 按命名空间分组标签
+        function groupTagsByNamespace(tags) {
+            const grouped = {};
+
+            if (!Array.isArray(tags)) {
+                console.warn('标签数据不是数组:', tags);
+                return grouped;
+            }
+
+            tags.forEach(tag => {
+                if (!tag || typeof tag !== 'object') {
+                    console.warn('无效的标签对象:', tag);
+                    return;
+                }
+
+                // 使用namespace_id获取命名空间名称
+                const namespaceId = tag.namespace_id;
+                const namespace = namespaceIdToName[namespaceId] || 'unknown';
+
+                if (!grouped[namespace]) {
+                    grouped[namespace] = [];
+                }
+                grouped[namespace].push(tag);
+            });
+            return grouped;
+        }
+
+        // 获取命名空间的显示名称
+        function getNamespaceDisplayName(namespace) {
+            return namespaceDisplayMap[namespace] || namespace;
+        }
+
+        // 渲染标签
+        function renderTags(tags) {
+            if (!tags || !Array.isArray(tags) || tags.length === 0) {
+                return '<div class="no-tags">暂无标签</div>';
+            }
+
+            const groupedTags = groupTagsByNamespace(tags);
+            let html = '';
+
+            // 按命名空间显示标签
+            Object.keys(groupedTags).forEach(namespace => {
+                const namespaceTags = groupedTags[namespace];
+                const displayName = getNamespaceDisplayName(namespace);
+
+                html += `
+                    <div class="tags-container tag-namespace-${namespace}">
+                        ${namespaceTags.map(tag => {
+                            const tagDescription = tag.description || tag.name;
+
+                            return `
+                                <a href="/tag.html?tag=${tag.id}" class="tag-item" title="${tagDescription}">
+                                    <span class="tag-namespace">${displayName}:</span>
+                                    ${tag.name}
+                                </a>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+            });
+
+            return html;
+        }
+
+        function renderMangaDetail(manga, chapters) {
+            const content = document.getElementById('mangaDetailContent');
+
+            chapters.sort((a, b) => a.number - b.number);
+
+            // 获取阅读进度
+            const progress = getReadingProgress(manga.id);
+            let buttonText = "开始阅读";
+            let buttonChapterId = chapters[0].id;
+            let buttonAction = `readManga('${manga.id}', '${chapters[0].id}', 1)`;
+
+            if (progress) {
+                // 查找进度记录中的章节是否在当前漫画章节列表中
+                const progressChapter = chapters.find(chapter => chapter.id === progress.chapterId);
+                if (progressChapter) {
+                    buttonText = "继续阅读";
+                    buttonChapterId = progress.chapterId;
+                    buttonAction = `readManga('${manga.id}', '${progress.chapterId}', ${progress.pageNum || 1})`;
+                }
+            }
+
+            content.innerHTML = `
+                <div class="manga-header">
+                    <div class="manga-cover-section">
+                        <img src="/api/manga/${manga.id}/cover" alt="${manga.title}" class="manga-cover" onerror="this.src='https://placehold.co/300x450/eee/999?text=封面'">
+                    </div>
+                    <div class="manga-info-section">
+                        <h1 class="manga-title">${manga.title}</h1>
+                        <div class="manga-author">作者：${manga.author}</div>
+                        <div class="manga-description">${manga.description || '暂无简介'}</div>
+
+                        <!-- 标签显示区域 -->
+                        <div class="manga-tags">
+                            <div class="tags-section-title">标签</div>
+                            ${renderTags(manga.tags)}
+                        </div>
+
+                        <div class="manga-actions">
+                            <button class="read-button" onclick="${buttonAction}">${buttonText}</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="chapters-section">
+                    <h2 class="section-title">章节列表 (${chapters.length} 章)</h2>
+                    <div class="chapters-grid">
+                        ${chapters.map(chapter => `
+                            <div class="chapter-card">
+                                <div class="chapter-info">
+                                    <h3>第${chapter.number}章 ${chapter.title}</h3>
+                                </div>
+                                <div class="chapter-actions">
+                                    <button class="btn" onclick="readChapter('${manga.id}', '${chapter.id}')">阅读</button>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function readManga(mangaId, chapterId, pageNum = 1) {
+            window.location.href = `/reader.html?manga=${mangaId}&chapter=${chapterId}&page=${pageNum}`;
+        }
+
+        function readChapter(mangaId, chapterId) {
+            // 记录用户选择了这个章节，从第一页开始阅读
+            setReadingProgress(mangaId, chapterId, 1);
+            window.location.href = `/reader.html?manga=${mangaId}&chapter=${chapterId}`;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMangaDetail();
+        });
+    </script>
+</body>
+</html>
