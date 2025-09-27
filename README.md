@@ -10,3 +10,6 @@
 🏷️ 分类标签 - 完善的分类和标签系统
 
 🔍 搜索功能 - 快速查找漫画作品
+
+## 示例图片
+<img width="1856" height="1173" alt="图片" src="https://github.com/user-attachments/assets/ca01f5af-e3af-443f-a040-40e03718393d" />
