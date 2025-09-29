@@ -1,85 +1,765 @@
-<!-- index.html -->
+<!-- index.html (Integrated, Fixed & Optimized) -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>你的标题</title>
+    <title></title>
     <!-- 引入外部样式表 -->
     <link rel="stylesheet" href="/style.css">
-    <style>
-        /* 添加内联样式确保标题立即显示 */
-        .section-title {
-            opacity: 1 !important;
-            transform: none !important;
+       <style>
+        /* ================= 1. 新增：粘性页脚 (Sticky Footer) 样式 ================= */
+        html {
+            height: 100%;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .page-container {
+            flex: 1 0 auto; /* 关键：让主内容区域自动伸展，推开页脚 */
+        }
+        .footer {
+            flex-shrink: 0; /* 关键：防止页脚在空间不足时被压缩 */
         }
 
-        /* 调整内容区域的动画，只对漫画网格生效 */
-        .content-section .container > *:not(.section-title) {
+        /* 保持原有动画样式 */
+        .content-section .container > *:not(.section-title) { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .content-section.active .container > *:not(.section-title) { opacity: 1; transform: translateY(0); }
+        .section-title { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .content-section.active .section-title { opacity: 1; transform: translateY(0); }
+        .manga-grid .manga-card { opacity: 0; transform: translateY(20px); transition: opacity 0.5s ease, transform 0.5s ease; }
+        .content-section.active .manga-grid .manga-card { opacity: 1; transform: translateY(0); }
+
+        /* ================= 最终优化版轮播图样式 (宽度和高度都已修正) ================= */
+        .carousel-section {
+            padding: 20px 0;
+            user-select: none;
+        }
+
+        .carousel-container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .carousel-wrapper {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+            /* 关键①：设置宽高比，手机端常用16:9 */
+            aspect-ratio: 16 / 9;
+        }
+
+        .carousel-track {
+            display: flex;
+            /* 关键②：让轨道高度充满其父容器(wrapper)，不再使用固定像素 */
+            height: 100%;
+            transition: transform 0.5s ease-in-out;
+        }
+
+        .carousel-item {
+            /* 关键③：修正宽度问题，确保每个item占满100%宽度 */
+            flex: 0 0 100%;
+            position: relative;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: flex-start;
+        }
+
+        .carousel-item img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .carousel-item-content {
+            position: relative;
+            z-index: 2;
+            padding: 15px; /* 移动端padding可以小一点 */
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            width: 100%;
+        }
+        .carousel-item-content h3 { margin: 0 0 5px 0; font-size: 16px; font-weight: bold; }
+        .carousel-item-content p { margin: 0; font-size: 12px; opacity: 0.9; }
+
+        /* 响应式调整宽高比和字体 */
+        @media (min-width: 768px) {
+            .carousel-wrapper {
+                /* 平板和桌面端，可以设置更宽的比例 */
+                aspect-ratio: 2.5 / 1;
+            }
+            .carousel-item-content { padding: 20px; }
+            .carousel-item-content h3 { font-size: 22px; }
+            .carousel-item-content p { font-size: 16px; }
+        }
+
+        @media (min-width: 1024px) {
+            .carousel-wrapper {
+                /* 大屏幕上可以更宽 */
+                aspect-ratio: 3 / 1;
+            }
+            .carousel-item-content { padding: 30px; }
+            .carousel-item-content h3 { font-size: 26px; }
+            .carousel-item-content p { font-size: 18px; }
+        }
+
+        /* 按钮和指示器样式 (保持不变) */
+        .carousel-btn { position: absolute; top: 50%; transform: translateY(-50%); background: rgba(255, 255, 255, 0.8); border: none; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; z-index: 10; display: flex; align-items: center; justify-content: center; transition: all 0.3s ease; }
+        .carousel-btn:hover { background: rgba(255, 255, 255, 1); transform: translateY(-50%) scale(1.1); }
+        .prev-btn { left: 15px; }
+        .next-btn { right: 15px; }
+        .carousel-indicators { position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 10; }
+        .carousel-indicator { width: 10px; height: 10px; border-radius: 50%; background: rgba(255, 255, 255, 0.5); cursor: pointer; transition: all 0.3s ease; }
+        .carousel-indicator.active { background: white; transform: scale(1.2); }
+
+        /* ===== 全新搜索英雄区 ===== */
+        .search-hero {
+            padding: 80px 20px 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .search-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            pointer-events: none;
+        }
+        .search-hero h1 {
+            color: white;
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 10px rgba(11,4,4,0.77);
             opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
+            animation: fadeInTitle 1s ease-out forwards 0.3s;
+        }
+        .search-hero p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+            opacity: 0;
+            animation: fadeInTitle 1s ease-out forwards 0.6s;
+        }
+        @keyframes fadeInTitle {
+            to { opacity: 1; }
         }
 
-        .content-section.active .container > *:not(.section-title) {
+        .search-box-large {
+            max-width: 650px;
+            margin: 0 auto;
+            position: relative;
+            opacity: 0;
+            animation: slideUpBox 0.8s ease-out forwards 0.9s;
+        }
+        @keyframes slideUpBox {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #searchInput {
+            width: 100%;
+            padding: 20px 60px 20px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            outline: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(255, 255, 255, 0.95);
+            font-weight: 500;
+            color: #333;
+            position: relative;
+            z-index: 2;
+        }
+        #searchInput:focus {
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3), 0 0 0 3px rgba(255, 107, 107, 0.3);
+            transform: translateY(-2px);
+        }
+        /* 搜索图标 */
+        .search-icon {
+            position: absolute;
+            right: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+            font-size: 20px;
+            transition: color 0.3s;
+            pointer-events: none;
+        }
+        #searchInput:focus + .search-icon {
+            color: #ff6b6b;
+        }
+
+        /* ===== 结果区域 ===== */
+        .content-section {
+            background-color: #f5f5f5;
+            padding: 50px 0 80px;
+            /* flex: 1;  <-- 此处 flex:1 无效且可能引起误解，已通过 .page-container 实现布局 */
+            border-top-left-radius: 40px;
+            border-top-right-radius: 40px;
+            margin-top: -40px;
+            position: relative;
+            z-index: 10;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .content-section.active {
             opacity: 1;
             transform: translateY(0);
         }
 
-        /* 确保分页控件也参与动画 */
-        .pagination {
+        /* ===== 漫画卡片样式 (继承主页) ===== */
+        .manga-scroll-container {
+            overflow-x: auto;
+            padding: 10px 0;
+            scrollbar-width: thin;
+            scrollbar-color: #ff6b6b #f5f5f5;
+        }
+        .manga-scroll-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .manga-scroll-container::-webkit-scrollbar-track {
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .manga-scroll-container::-webkit-scrollbar-thumb {
+            background-color: #ff6b6b;
+            border-radius: 4px;
+        }
+        .manga-grid.horizontal {
+            display: flex;
+            gap: 20px;
+            padding: 10px 0;
+            align-items: flex-start;
+        }
+        .manga-grid.horizontal .manga-card {
+            flex: 0 0 auto;
+            width: clamp(150px, 25vw, 250px);
+        }
+        .manga-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
             opacity: 0;
-            transform: translateY(20px);
-            transition: opacity 0.5s ease, transform 0.5s ease;
+            transform: translateY(30px) scale(0.95);
+        }
+        .content-section.active .manga-card {
+            animation: cardPopIn 0.5s ease forwards;
+        }
+        .manga-card:hover {
+            transform: translateY(-8px) scale(1.02) !important;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        @keyframes cardPopIn {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        /* 为卡片添加延迟，实现瀑布流效果 */
+        .content-section.active .manga-card:nth-child(1) { animation-delay: 0.1s; }
+        .content-section.active .manga-card:nth-child(2) { animation-delay: 0.2s; }
+        .content-section.active .manga-card:nth-child(3) { animation-delay: 0.3s; }
+        .content-section.active .manga-card:nth-child(4) { animation-delay: 0.4s; }
+        .content-section.active .manga-card:nth-child(5) { animation-delay: 0.5s; }
+        .content-section.active .manga-card:nth-child(6) { animation-delay: 0.6s; }
+        .content-section.active .manga-card:nth-child(7) { animation-delay: 0.7s; }
+        .content-section.active .manga-card:nth-child(8) { animation-delay: 0.8s; }
+        .content-section.active .manga-card:nth-child(9) { animation-delay: 0.9s; }
+        .content-section.active .manga-card:nth-child(10) { animation-delay: 1.0s; }
+
+        .manga-cover {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .manga-info {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 80px;
+        }
+        .manga-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+            flex-grow: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.4;
+        }
+        .manga-author {
+            color: #666;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .content-section.active .pagination {
+        /* ===== 标签页样式 ===== */
+        .namespace-tabs,
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .namespace-tab,
+        .tag-item {
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .namespace-tab {
+            background-color: #e0e0e0;
+        }
+
+        .namespace-tab.active,
+        .namespace-tab:hover {
+            background-color: #ff6b6b;
+            color: white;
+        }
+
+        .tag-item {
+            background-color: #f0f0f0;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .tag-item:hover {
+            background-color: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .tag-item.type { background-color: #ffebee; color: #c62828; }
+        .tag-item.artist { background-color: #e8f5e9; color: #2e7d32; }
+        .tag-item.character { background-color: #e3f2fd; color: #1565c0; }
+        .tag-item.main { background-color: #fff3e0; color: #ef6c00; }
+        .tag-item.sub { background-color: #f3e5f5; color: #7b1fa2; }
+
+        .tag-count {
+            font-size: 0.8rem;
+            color: #666;
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 10px;
+            padding: 2px 6px;
+        }
+
+        /* 标签选中状态增强 */
+        .tag-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .tag-item.active .tag-count {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        /* 修复动画相关样式 */
+        .manga-grid {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+
+        .manga-grid.loaded {
             opacity: 1;
             transform: translateY(0);
+        }
+
+        .manga-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 加载状态 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .no-manga {
+            text-align: center;
+            padding: 60px 20px;
+            color: #888;
+            font-size: 16px;
+        }
+
+        /* 添加页面切换显示/隐藏样式 */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            .search-hero {
+                padding: 60px 20px 40px;
+            }
+            .search-hero h1 {
+                font-size: 2.2rem;
+            }
+            #searchInput {
+                padding: 18px 50px 18px 20px;
+                font-size: 16px;
+            }
+            .content-section {
+                padding: 40px 0 60px;
+                border-top-left-radius: 30px;
+                border-top-right-radius: 30px;
+                margin-top: -30px;
+            }
+            .manga-grid.horizontal {
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+            .namespace-tabs,
+            .tags-container {
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding-bottom: 10px;
+                white-space: nowrap;
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .namespace-tabs::-webkit-scrollbar,
+            .tags-container::-webkit-scrollbar {
+                display: none;
+            }
         }
     </style>
+
 </head>
 <body>
     <header class="header">
         <div class="container">
             <div class="header-content">
-                <div class="logo">你的标题</div>
-                <ul class="nav-menu">
-                    <!-- 为当前页面添加 active 类 -->
-                    <li><a href="/" class="active">首页</a></li>
-                    <li><a href="/search.html">搜索</a></li>
-                    <li><a href="/tag.html">标签</a></li>
+                <div class="logo"></div>
+                <ul class="nav-menu" id="navMenu">
+                    <li><a href="#" class="active" data-page="home">首页</a></li>
+                    <li><a href="#" data-page="search">搜索</a></li>
+                    <li><a href="#" data-page="tags">标签</a></li>
                 </ul>
             </div>
         </div>
     </header>
 
-    <main class="content-section" id="mainContentSection">
-        <div class="container">
-            <h2 class="section-title">全部漫画</h2>
-            <div class="manga-grid" id="allMangaGrid">
-                <div class="loading">加载中...</div>
-            </div>
-            <div id="pagination" class="pagination"></div>
-        </div>
-    </main>
+    <!-- 页面容器 -->
+    <div class="page-container">
+        <!-- 主页内容 -->
+        <div id="home-page" class="page active">
+            <section class="carousel-section">
+                <div class="container">
+                    <div class="carousel-container">
+                        <div class="carousel-wrapper" id="carouselWrapper">
+                            <!-- 新结构：轨道(track)用于滑动 -->
+                            <div class="carousel-track" id="carouselTrack">
+                                <div class="carousel-item">
+                                    <img src="https://placehold.co/800x400/eee/999?text=加载中..." alt="轮播图">
+                                </div>
+                            </div>
+                            <button class="carousel-btn prev-btn" id="prevBtn">&#10094;</button>
+                            <button class="carousel-btn next-btn" id="nextBtn">&#10095;</button>
+                            <div class="carousel-indicators" id="indicators"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
+            <main class="content-section" id="mainContentSection">
+                <div class="container">
+                    <h2 class="section-title">全部漫画</h2>
+                    <div class="manga-grid" id="allMangaGrid">
+                        <div class="loading">加载中...</div>
+                    </div>
+                    <!-- ================= 2. 修复：为首页分页容器设置唯一ID ================= -->
+                    <div id="homePagination" class="pagination"></div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 搜索页面内容 -->
+        <div id="search-page" class="page">
+            <!-- 沉浸式搜索英雄区 -->
+            <div class="search-hero">
+                <h1>✨ 搜本站</h1>
+                <p></p>
+                <div class="search-box-large">
+                    <input type="text" id="searchInput" placeholder="输入关键词，或作者" />
+                    <span class="search-icon">🔍</span>
+                </div>
+            </div>
+
+            <!-- 搜索结果区域 (初始隐藏) -->
+            <main class="content-section" id="resultsSection">
+                <div class="container">
+                    <h2 class="section-title">搜索结果</h2>
+                    <div class="manga-scroll-container">
+                        <div class="manga-grid horizontal" id="searchResultsContainer">
+                            <div class="loading">请输入关键词并按回车开始搜索...</div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- 标签页面内容 -->
+        <div id="tags-page" class="page">
+            <main class="content-section" id="tagsResultsSection"> <!-- 修复：使用不同的ID避免与搜索页冲突 -->
+                <div class="container">
+                    <h2 class="section-title">标签分类</h2>
+                    <!-- 命名空间标签 -->
+                    <div class="namespace-tabs" id="namespaceTabs"></div>
+                    <!-- 标签列表 -->
+                    <div class="tags-container" id="tagsContainer"></div>
+                    <!-- 漫画列表 -->
+                    <div class="manga-grid" id="mangaGridByTag"> <!-- 修复：使用不同的ID避免与首页冲突 --></div>
+                    <!-- ================= 2. 修复：为标签页分页容器设置唯一ID ================= -->
+                    <div id="tagsPagination" class="pagination"></div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- 这是全站唯一的页脚，CSS已确保其位置正确 -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 使用各种ai杂交制作的漫画网站，仅供于学习交流</p>
+            <p>&copy; 2025 使用各种ai杂交制作的漫画网站，仅供于学习交流</p>
             <p>联系邮箱：</p>
-            <!-- 统一页脚结构 -->
             <p><a href="/login.html" class="admin-link">管理后台</a></p>
         </div>
     </footer>
 
     <script>
+        // =================== 优化后的轮播图功能 ===================
+        const carouselWrapper = document.getElementById('carouselWrapper');
+        const carouselTrack = document.getElementById('carouselTrack');
+        const indicatorsContainer = document.getElementById('indicators');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        let carouselData = [];
+        let currentIndex = 0;
+        let carouselInterval = null;
+        let isAnimating = false; // 防止动画期间重复触发
+        let touchStartX = 0; // 用于触摸滑动
+        let touchMoveX = 0; // 用于触摸滑动
+
+        async function loadCarouselData() {
+            try {
+                const response = await fetch('/api/carousel');
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                carouselData = await response.json();
+                renderCarousel();
+            } catch (error) {
+                console.error('加载轮播图失败:', error);
+                carouselData = [{
+                    id: 0, title: '欢迎使用', description: '精彩漫画等你发现', link_url: '#',
+                    image_path: 'https://placehold.co/800x400/ff6b6b/ffffff?text=精彩漫画',
+                }];
+                renderCarousel();
+            }
+        }
+
+        function renderCarousel() {
+            if (!carouselTrack || !indicatorsContainer) return;
+
+            carouselTrack.innerHTML = '';
+            indicatorsContainer.innerHTML = '';
+
+            if (carouselData.length === 0) {
+                carouselTrack.innerHTML = `
+                    <div class="carousel-item">
+                        <img src="https://placehold.co/800x400/eee/999?text=暂无内容" alt="占位图">
+                        <div class="carousel-item-content"><h3>暂无轮播图</h3><p>请在后台添加</p></div>
+                    </div>`;
+                return;
+            }
+
+            carouselData.forEach((item, index) => {
+                const imageUrl = (item.id && !item.image_path.startsWith('http')) ? `/api/carousel/${item.id}/image` : item.image_path;
+                const carouselItem = document.createElement('div');
+                carouselItem.className = 'carousel-item';
+                carouselItem.innerHTML = `
+                    <a href="${item.link_url || '#'}" target="_blank" rel="noopener noreferrer" style="display: contents;">
+                        <img src="${imageUrl}" alt="${item.title || '轮播图'}">
+                        <div class="carousel-item-content">
+                            <h3>${item.title || ''}</h3>
+                            <p>${item.description || '精彩内容等你发现'}</p>
+                        </div>
+                    </a>`;
+                carouselTrack.appendChild(carouselItem);
+
+                const indicator = document.createElement('div');
+                indicator.className = 'carousel-indicator';
+                indicator.dataset.index = index;
+                indicatorsContainer.appendChild(indicator);
+            });
+
+            // 克隆首尾以实现无缝循环
+            if (carouselData.length > 1) {
+                const firstClone = carouselTrack.firstElementChild.cloneNode(true);
+                const lastClone = carouselTrack.lastElementChild.cloneNode(true);
+                carouselTrack.appendChild(firstClone);
+                carouselTrack.insertBefore(lastClone, carouselTrack.firstElementChild);
+                currentIndex = 1; // Start from the first real item
+            } else {
+                currentIndex = 0;
+            }
+
+
+            updateCarousel(false); // Initial position without transition
+            initCarouselEvents();
+            startAutoPlay();
+        }
+
+        function updateCarousel(useTransition = true) {
+            if (useTransition) {
+                carouselTrack.style.transition = 'transform 0.5s ease-in-out';
+            } else {
+                carouselTrack.style.transition = 'none';
+            }
+            carouselTrack.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+            // Update indicators based on real index
+            const realIndex = (currentIndex - 1 + carouselData.length) % carouselData.length;
+            const indicators = indicatorsContainer.querySelectorAll('.carousel-indicator');
+            indicators.forEach((indicator, index) => {
+                indicator.classList.toggle('active', index === realIndex);
+            });
+        }
+
+        carouselTrack.addEventListener('transitionend', () => {
+            if (currentIndex === 0) {
+                currentIndex = carouselData.length;
+                updateCarousel(false);
+            } else if (currentIndex === carouselData.length + 1) {
+                currentIndex = 1;
+                updateCarousel(false);
+            }
+            isAnimating = false;
+        });
+
+
+        function goToSlide(index) {
+            if (isAnimating) return;
+            isAnimating = true;
+            currentIndex = index;
+            updateCarousel();
+        }
+
+        function changeSlide(direction) {
+             if (isAnimating) return;
+            isAnimating = true;
+            currentIndex += direction;
+            updateCarousel();
+        }
+
+        function startAutoPlay() {
+            if (carouselInterval) clearInterval(carouselInterval);
+            if (carouselData.length <= 1) return;
+            carouselInterval = setInterval(() => changeSlide(1), 5000);
+        }
+
+        function resetAutoPlay() {
+            startAutoPlay();
+        }
+
+        function initCarouselEvents() {
+            prevBtn.addEventListener('click', () => {
+                changeSlide(-1);
+                resetAutoPlay();
+            });
+
+            nextBtn.addEventListener('click', () => {
+                changeSlide(1);
+                resetAutoPlay();
+            });
+
+            indicatorsContainer.addEventListener('click', (e) => {
+                if (e.target.matches('.carousel-indicator')) {
+                    const index = parseInt(e.target.dataset.index, 10);
+                    goToSlide(index + 1); // Adjust for cloned item
+                    resetAutoPlay();
+                }
+            });
+
+            carouselWrapper.addEventListener('touchstart', (e) => {
+                if (carouselData.length <= 1) return;
+                touchStartX = e.touches[0].clientX;
+                clearInterval(carouselInterval);
+            });
+
+            carouselWrapper.addEventListener('touchmove', (e) => {
+                if (touchStartX === 0) return;
+                touchMoveX = e.touches[0].clientX;
+            });
+
+            carouselWrapper.addEventListener('touchend', () => {
+                if (touchStartX === 0) return;
+                const diff = touchStartX - touchMoveX;
+                if (Math.abs(diff) > 50) {
+                    changeSlide(diff > 0 ? 1 : -1);
+                }
+                touchStartX = 0;
+                touchMoveX = 0;
+                resetAutoPlay();
+            });
+        }
+
+        // =================== 原有漫画功能 (保持不变) ===================
         const MANGA_PER_PAGE = window.innerWidth < 768 ? 12 : 14;
         let currentPage = 1;
         let totalPages = 1;
         let currentSearchQuery = '';
 
-        // 渲染漫画卡片（不包含动画类，由 displayPage 统一控制）
         function renderMangaCard(manga) {
             const card = document.createElement('div');
             card.className = 'manga-card';
@@ -90,62 +770,48 @@
                 <div class="manga-info">
                     <div class="manga-title">${manga.title}</div>
                     <div class="manga-author">${manga.author}</div>
-                </div>
-            `;
+                </div>`;
             return card;
         }
 
-        // 显示指定页漫画（带动画）
         function displayPage(pageNumber, mangaData, total) {
             const container = document.getElementById('allMangaGrid');
             const mainSection = document.getElementById('mainContentSection');
             container.innerHTML = '';
-
             totalPages = Math.ceil(total / MANGA_PER_PAGE);
             currentPage = pageNumber;
 
+            // ================= 3. 修复：使用正确的 pagination ID =================
+            const paginationContainer = document.getElementById('homePagination');
+
             if (mangaData.length === 0) {
                 container.innerHTML = '<div class="no-manga">暂无内容</div>';
-                document.getElementById('pagination').innerHTML = '';
+                paginationContainer.innerHTML = '';
                 mainSection.classList.add('active');
                 return;
             }
 
-            mangaData.forEach(manga => {
-                container.appendChild(renderMangaCard(manga));
-            });
+            mangaData.forEach(manga => container.appendChild(renderMangaCard(manga)));
+            if (!mainSection.classList.contains('active')) mainSection.classList.add('active');
 
-            // 激活动画区域
-            if (!mainSection.classList.contains('active')) {
-                mainSection.classList.add('active');
-            }
-
-            // 为前20个卡片添加动画延迟
             const cards = container.querySelectorAll('.manga-card');
             cards.forEach((card, index) => {
-                if (index < 20) {
-                    card.style.animationDelay = `${0.1 + index * 0.05}s`;
-                }
+                if (index < 20) card.style.transitionDelay = `${index * 0.05}s`;
             });
 
-            // 渲染分页控件
             renderPagination(total, pageNumber);
         }
 
-        // 渲染分页按钮
         function renderPagination(totalItems, currentPage) {
-            const paginationContainer = document.getElementById('pagination');
+            // ================= 3. 修复：使用正确的 pagination ID =================
+            const paginationContainer = document.getElementById('homePagination');
             paginationContainer.innerHTML = '';
-
             const totalPages = Math.ceil(totalItems / MANGA_PER_PAGE);
             if (totalPages <= 1) return;
-
             const maxVisible = window.innerWidth < 480 ? 3 : 7;
             let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
             let endPage = Math.min(totalPages, startPage + maxVisible - 1);
-            if (endPage - startPage + 1 < maxVisible) {
-                startPage = Math.max(1, endPage - maxVisible + 1);
-            }
+            if (endPage - startPage + 1 < maxVisible) startPage = Math.max(1, endPage - maxVisible + 1);
 
             const prevButton = document.createElement('button');
             prevButton.textContent = '‹';
@@ -168,33 +834,24 @@
             paginationContainer.appendChild(nextButton);
         }
 
-        // 加载漫画数据（支持搜索 + 分页）
         async function loadMangaData(searchQuery = '', page = 1) {
             currentSearchQuery = searchQuery;
             const grid = document.getElementById('allMangaGrid');
             grid.innerHTML = '<div class="loading">加载中...</div>';
-            document.getElementById('pagination').innerHTML = '';
-
+            // ================= 3. 修复：使用正确的 pagination ID =================
+            document.getElementById('homePagination').innerHTML = '';
             try {
-                const params = new URLSearchParams({
-                    page: page,
-                    limit: MANGA_PER_PAGE
-                });
-                if (searchQuery) {
-                    params.set('q', searchQuery);
-                }
+                const params = new URLSearchParams({ page: page, limit: MANGA_PER_PAGE });
+                if (searchQuery) params.set('q', searchQuery);
                 const url = searchQuery ? `/api/manga/search?${params.toString()}` : `/api/manga?${params.toString()}`;
                 const res = await fetch(url);
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const { data, total } = await res.json();
                 displayPage(page, data, total);
-
-                // 滚动到漫画区域顶部（可选）
-                document.getElementById('mainContentSection').scrollIntoView({ behavior: 'smooth' });
             } catch (error) {
                 console.error('加载失败:', error);
                 grid.innerHTML = `<div class="no-manga">加载失败: ${error.message}</div>`;
-                document.getElementById('pagination').innerHTML = '';
+                document.getElementById('homePagination').innerHTML = '';
                 document.getElementById('mainContentSection').classList.add('active');
             }
         }
@@ -203,10 +860,265 @@
             window.location.href = `/manga-detail.html?id=${mangaId}`;
         }
 
+        // =================== 搜索功能 ===================
+        function renderSearchMangaCard(manga) {
+            const mangaCard = document.createElement('div');
+            mangaCard.className = 'manga-card';
+            mangaCard.onclick = () => { window.location.href = `/manga-detail.html?id=${manga.id}`; };
+            mangaCard.innerHTML = `
+                <img src="/api/manga/${manga.id}/cover" alt="${manga.title}" class="manga-cover" onerror="this.src='https://placehold.co/200x300/eee/999?text=封面'">
+                <div class="manga-info">
+                    <div class="manga-title">${manga.title}</div>
+                    <div class="manga-author">${manga.author}</div>
+                </div>`;
+            return mangaCard;
+        }
+
+        async function performSearch(query) {
+            const container = document.getElementById('searchResultsContainer');
+            const resultsSection = document.getElementById('resultsSection');
+            container.innerHTML = '<div class="loading">正在为你寻找宝藏漫画...</div>';
+
+            if (!query.trim()) {
+                container.innerHTML = `<div class="loading">请输入关键词并按回车开始搜索...</div>`;
+                resultsSection.classList.remove('active');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/manga/search?q=${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                const results = await response.json();
+
+                setTimeout(() => {
+                    container.innerHTML = '';
+                    if (results.length === 0) {
+                        container.innerHTML = `<div class="no-manga"><p>🌌 宇宙中暂时没有发现你要找的漫画</p><p style="margin-top: 10px; font-size: 16px;">换个关键词试试吧！</p></div>`;
+                    } else {
+                        results.forEach(manga => container.appendChild(renderSearchMangaCard(manga)));
+                    }
+                    resultsSection.classList.add('active');
+                }, 400);
+            } catch (error) {
+                console.error('搜索失败:', error);
+                setTimeout(() => {
+                    container.innerHTML = `<div class="no-manga"><p>⚠️ 探索飞船遇到一点小故障</p><p style="margin-top: 10px; font-size: 16px;">请稍后再试。错误: ${error.message}</p></div>`;
+                    resultsSection.classList.add('active');
+                }, 400);
+            }
+        }
+
+        // =================== 标签功能 (已修复) ===================
+        let allNamespaces = [];
+        let allTags = {};
+        let selectedNamespace = '';
+        let currentTagId = null;
+        let currentTagPage = 1;
+        let totalTagPages = 1;
+        const TAG_MANGA_PER_PAGE = MANGA_PER_PAGE;
+
+        function renderNamespaceTabs(namespaces) {
+            const container = document.getElementById('namespaceTabs');
+            container.innerHTML = '';
+            if (namespaces.length > 0) selectedNamespace = namespaces[0].name;
+
+            namespaces.forEach(ns => {
+                const tab = document.createElement('div');
+                tab.className = `namespace-tab ${selectedNamespace === ns.name ? 'active' : ''}`;
+                tab.textContent = ns.display_name;
+                tab.onclick = (e) => selectNamespace(ns.name, e);
+                container.appendChild(tab);
+            });
+        }
+
+        function renderTags(tags) {
+            const container = document.getElementById('tagsContainer');
+            container.innerHTML = '';
+            tags.forEach(tag => {
+                const tagEl = document.createElement('div');
+                tagEl.className = `tag-item ${tag.namespace_name}`;
+                tagEl.setAttribute('data-tag-id', tag.id);
+                tagEl.innerHTML = `<span>${tag.name}</span><span class="tag-count">${tag.count}</span>`;
+                tagEl.onclick = () => selectTag(tag);
+                container.appendChild(tagEl);
+            });
+        }
+
+        function renderTagMangaCard(manga, index) {
+            const card = document.createElement('div');
+            card.className = 'manga-card';
+            card.style.animationDelay = `${index * 0.1}s`;
+            card.onclick = () => { window.location.href = `/manga-detail.html?id=${manga.id}`; };
+            card.innerHTML = `
+                <img src="/api/manga/${manga.id}/cover" alt="${manga.title}" class="manga-cover"
+                     onerror="this.src='https://placehold.co/200x300/eee/999?text=封面'">
+                <div class="manga-info">
+                    <div class="manga-title">${manga.title}</div>
+                    <div class="manga-author">${manga.author}</div>
+                </div>`;
+            return card;
+        }
+
+        function displayTagMangaPage(pageNumber, mangaData, total) {
+            const grid = document.getElementById('mangaGridByTag'); // 使用唯一ID
+            const section = document.getElementById('tagsResultsSection'); // 使用唯一ID
+            const paginationContainer = document.getElementById('tagsPagination'); // 使用唯一ID
+
+            totalTagPages = Math.ceil(total / TAG_MANGA_PER_PAGE);
+            currentTagPage = pageNumber;
+            grid.innerHTML = '';
+
+            if (mangaData.length === 0) {
+                grid.innerHTML = '<div class="no-manga">暂无相关漫画</div>';
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            mangaData.forEach((manga, index) => grid.appendChild(renderTagMangaCard(manga, index)));
+            setTimeout(() => { grid.classList.add('loaded'); }, 100);
+            if (!section.classList.contains('active')) section.classList.add('active');
+            renderTagPagination();
+        }
+
+        function renderTagPagination() {
+            const container = document.getElementById('tagsPagination'); // 使用唯一ID
+            container.innerHTML = '';
+            if (totalTagPages <= 1) return;
+
+            const maxVisible = window.innerWidth < 480 ? 3 : 7;
+            let start = Math.max(1, currentTagPage - Math.floor(maxVisible / 2));
+            let end = Math.min(totalTagPages, start + maxVisible - 1);
+            if (end - start + 1 < maxVisible) start = Math.max(1, end - maxVisible + 1);
+
+            const prev = document.createElement('button');
+            prev.textContent = '‹';
+            prev.disabled = currentTagPage === 1;
+            prev.onclick = () => loadTagMangaPage(currentTagId, currentTagPage - 1);
+            container.appendChild(prev);
+
+            for (let i = start; i <= end; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                if (i === currentTagPage) btn.classList.add('active');
+                btn.onclick = () => loadTagMangaPage(currentTagId, i);
+                container.appendChild(btn);
+            }
+
+            const next = document.createElement('button');
+            next.textContent = '›';
+            next.disabled = currentTagPage === totalTagPages;
+            next.onclick = () => loadTagMangaPage(currentTagId, currentTagPage + 1);
+            container.appendChild(next);
+        }
+
+        async function loadTagMangaPage(tagId, page) {
+            const grid = document.getElementById('mangaGridByTag'); // 使用唯一ID
+            grid.classList.remove('loaded');
+            grid.innerHTML = '<div class="loading">加载中...</div>';
+            document.getElementById('tagsPagination').innerHTML = ''; // 使用唯一ID
+
+            try {
+                const params = new URLSearchParams({ tag: tagId, page: page, limit: TAG_MANGA_PER_PAGE });
+                const res = await fetch(`/api/manga?${params.toString()}`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const { data, total } = await res.json();
+                displayTagMangaPage(page, data, total);
+            } catch (err) {
+                console.error('加载漫画失败:', err);
+                grid.innerHTML = '<div class="no-manga">加载失败，请稍后重试</div>';
+                document.getElementById('tagsPagination').innerHTML = '';
+            }
+        }
+
+        function selectNamespace(namespaceName, event) {
+            selectedNamespace = namespaceName;
+            document.querySelectorAll('.namespace-tab').forEach(t => t.classList.remove('active'));
+            if (event.target) event.target.classList.add('active');
+            renderTags(allTags[namespaceName] || []);
+
+            const grid = document.getElementById('mangaGridByTag'); // 使用唯一ID
+            grid.classList.remove('loaded');
+            grid.innerHTML = '';
+            document.getElementById('tagsPagination').innerHTML = ''; // 使用唯一ID
+            currentTagId = null;
+            document.querySelectorAll('.tag-item.active').forEach(t => t.classList.remove('active'));
+        }
+
+        function selectTag(tag) {
+            currentTagId = tag.id;
+            document.querySelectorAll('.tag-item.active').forEach(t => t.classList.remove('active'));
+            const selectedTagEl = document.querySelector(`.tag-item[data-tag-id="${tag.id}"]`);
+            if (selectedTagEl) selectedTagEl.classList.add('active');
+            loadTagMangaPage(tag.id, 1);
+        }
+
+        async function loadTagData() {
+            const section = document.getElementById('tagsResultsSection'); // 使用唯一ID
+            try {
+                const [nsRes, tagsRes] = await Promise.all([
+                    fetch('/api/tag/namespaces'),
+                    fetch('/api/tags')
+                ]);
+                allNamespaces = await nsRes.json();
+                const tags = await tagsRes.json();
+                allTags = {};
+                allNamespaces.forEach(ns => allTags[ns.name] = []);
+                tags.forEach(t => {
+                    if (allTags[t.namespace_name]) allTags[t.namespace_name].push(t);
+                });
+
+                renderNamespaceTabs(allNamespaces);
+                if (selectedNamespace) renderTags(allTags[selectedNamespace] || []);
+                section.classList.add('active');
+            } catch (err) {
+                console.error('初始化标签失败:', err);
+                section.classList.add('active');
+            }
+        }
+
+        // =================== 页面切换与初始化 ===================
+        function switchPage(pageName) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(`${pageName}-page`).classList.add('active');
+
+            document.querySelectorAll('#navMenu a').forEach(link => link.classList.remove('active'));
+            document.querySelector(`[data-page="${pageName}"]`).classList.add('active');
+
+            if (pageName === 'home' && document.getElementById('allMangaGrid').innerHTML === '<div class="loading">加载中...</div>') {
+                loadMangaData('', 1);
+            } else if (pageName === 'search') {
+                const urlParams = new URLSearchParams(window.location.search);
+                const initialQuery = urlParams.get('q');
+                if (initialQuery) {
+                    document.getElementById('searchInput').value = initialQuery;
+                    performSearch(initialQuery);
+                }
+            } else if (pageName === 'tags' && allNamespaces.length === 0) {
+                loadTagData();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
-            // 初始加载第一页
+            loadCarouselData();
             loadMangaData('', 1);
+
+            const navToggle = document.querySelector('.nav-toggle');
+            const navMenu = document.querySelector('.nav-menu');
+            if (navToggle) navToggle.addEventListener('click', () => navMenu.classList.toggle('active'));
+
+            document.querySelectorAll('[data-page]').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    switchPage(e.target.getAttribute('data-page'));
+                });
+            });
+
+            const searchInput = document.getElementById('searchInput');
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') performSearch(searchInput.value);
+            });
         });
     </script>
 </body>
 </html>
+

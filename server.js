@@ -59,7 +59,7 @@ const rootDir = process.cwd();
 
 // 创建必要的文件夹
 async function createDirectories() {
-    const dirs = ['manga', 'manga/covers', 'manga/files', 'manga/extracted', 'logs', 'manga/chapters'];
+    const dirs = ['manga', 'manga/covers', 'manga/files', 'manga/extracted', 'logs', 'manga/chapters', 'manga/carousel'];
     for (const dir of dirs) {
         const fullPath = path.join(rootDir, dir);
         try {
@@ -135,6 +135,9 @@ const storage = multer.diskStorage({
             dir = path.join(rootDir, 'manga/covers/');
         } else if (file.fieldname === 'chapterFile') {
             dir = path.join(rootDir, 'manga/chapters/');
+        } else if (file.fieldname === 'image') {
+            // 为轮播图图片创建专门的目录
+            dir = path.join(rootDir, 'manga/carousel/');
         } else {
             dir = path.join(rootDir, 'manga/files/');
         }
@@ -152,12 +155,12 @@ const upload = multer({
         fileSize: 200 * 1024 * 1024
     },
     fileFilter: function (req, file, cb) {
-        if (file.fieldname === 'cover') {
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (file.fieldname === 'cover' || file.fieldname === 'image') {
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
             if (allowedTypes.includes(file.mimetype)) {
                 cb(null, true);
             } else {
-                cb(new Error('只允许上传图片文件作为封面'));
+                cb(new Error('只允许上传图片文件'));
             }
         } else if (file.fieldname === 'chapterFile') {
             const allowedExtensions = ['.zip', '.cbz'];
@@ -234,6 +237,11 @@ app.get(['/', '/index', '/index.html'], (req, res, next) => {
 });
 
 app.use(express.static('.'));
+
+// --- 重定向旧页面到新集成页面 ---
+app.get(['/search.html', '/tag.html'], (req, res) => {
+    res.redirect('/');
+});
 
 // --- 🆕 数据库交互函数 (PostgreSQL) ---
 // 从 PostgreSQL 读取所有漫画及其章节
@@ -745,6 +753,83 @@ async function searchMangaByTagOrTitle(query) {
     }
 }
 
+// 添加轮播图表
+async function initializeCarouselTable() {
+    const client = await pgPool.connect();
+    try {
+        // 检查表是否已存在
+        const tableCheck = await client.query(`
+            SELECT EXISTS (
+                SELECT FROM information_schema.tables 
+                WHERE table_schema = 'public' 
+                AND table_name = 'carousel_images'
+            );
+        `);
+        
+        if (!tableCheck.rows[0].exists) {
+            // 如果表不存在，创建新表
+            await client.query(`
+            CREATE TABLE carousel_images (
+                id SERIAL PRIMARY KEY,
+                title VARCHAR(255),
+                link_url VARCHAR(500),
+                image_path VARCHAR(1000) NOT NULL,
+                sort_order INTEGER DEFAULT 0,
+                is_active BOOLEAN DEFAULT true,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+            `);
+            console.log('✅ 轮播图表已创建');
+        } else {
+            // 如果表已存在，检查并更新image_path字段长度
+            try {
+                await client.query(`
+                ALTER TABLE carousel_images ALTER COLUMN image_path TYPE VARCHAR(1000);
+                `);
+                console.log('✅ 轮播图image_path字段已更新为VARCHAR(1000)');
+            } catch (alterError) {
+                console.log('ℹ️ 尝试更新image_path字段长度时出现提示: ', alterError.message);
+                // 如果上面的失败，尝试使用 USING 子句
+                try {
+                    await client.query(`
+                    ALTER TABLE carousel_images ALTER COLUMN image_path TYPE VARCHAR(1000) USING image_path::VARCHAR(1000);
+                    `);
+                    console.log('✅ 轮播图image_path字段已使用USING子句更新');
+                } catch (secondAlterError) {
+                    console.log('ℹ️ 使用USING子句更新失败: ', secondAlterError.message);
+                }
+            }
+        }
+        
+        console.log('✅ 轮播图表检查/创建完成');
+    } catch (error) {
+        console.error('初始化轮播图表失败:', error);
+    } finally {
+        client.release();
+    }
+}
+
+// 验证管理员权限的中间件
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).json({ error: '未授权访问，请先登录' });
+    }
+    const sessionId = authHeader.replace('Bearer ', '');
+    validateSession(sessionId)
+    .then(isValid => {
+        if (!isValid) {
+            return res.status(401).json({ error: '会话已过期，请重新登录' });
+        }
+        next();
+    })
+    .catch(error => {
+        console.error('会话验证中间件错误:', error);
+        return res.status(500).json({ error: '服务器内部错误' });
+    });
+}
+
+
 // API路由
 
 // 获取访问统计 (从 Redis)
@@ -918,6 +1003,200 @@ app.get('/api/manga', async (req, res) => {
         res.status(500).json({ error: '获取漫画数据失败' });
     }
 });
+// ========== 轮播图 API 路由 ==========
+// 获取所有启用的轮播图
+app.get('/api/carousel', async (req, res) => {
+    try {
+        const client = await pgPool.connect();
+        const result = await client.query(`
+        SELECT id, title, link_url, image_path, sort_order, is_active, created_at
+        FROM carousel_images
+        WHERE is_active = true
+        ORDER BY sort_order ASC, created_at DESC
+        `);
+        client.release();
+        res.json(result.rows);
+    } catch (error) {
+        console.error('获取轮播图失败:', error);
+        res.status(500).json({ error: '获取轮播图失败' });
+    }
+});
+
+// 上传轮播图
+app.post('/api/carousel', authenticateToken, upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: '请上传图片文件' });
+        }
+
+        const { title = '', linkUrl = '', sortOrder = 0 } = req.body;
+
+        // 使用相对路径而不是绝对路径，避免路径过长问题
+        const imagePath = path.relative(rootDir, req.file.path).replace(/\\/g, '/');
+
+        const client = await pgPool.connect();
+        const result = await client.query(`
+        INSERT INTO carousel_images (title, link_url, image_path, sort_order, is_active)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id
+        `, [title || '', linkUrl || '', imagePath, parseInt(sortOrder) || 0, true]);
+        client.release();
+
+        res.json({
+            success: true,
+            id: result.rows[0].id,
+            message: '轮播图上传成功'
+        });
+    } catch (error) {
+        console.error('上传轮播图失败:', error);
+        res.status(500).json({ error: '上传轮播图失败: ' + error.message });
+    }
+});
+
+// 获取轮播图图片
+app.get('/api/carousel/:id/image', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // 验证ID是否为有效数字
+        if (!id || isNaN(id) || parseInt(id) <= 0) {
+            return res.status(400).json({ error: '无效的ID参数' });
+        }
+        
+        const client = await pgPool.connect();
+        try {
+            const result = await client.query(
+                'SELECT image_path FROM carousel_images WHERE id = $1',
+                [parseInt(id)]
+            );
+            
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: '图片不存在' });
+            }
+
+            const imagePath = result.rows[0].image_path;
+            if (!imagePath) {
+                return res.status(404).json({ error: '图片路径未定义' });
+            }
+            
+            // 构造完整的文件路径
+            let fullPath;
+            if (path.isAbsolute(imagePath)) {
+                fullPath = imagePath;
+            } else {
+                fullPath = path.join(rootDir, imagePath);
+            }
+            
+            // 标准化路径并确保安全性（防止路径遍历）
+            fullPath = path.resolve(fullPath);
+            const rootDirResolved = path.resolve(rootDir);
+            
+            // 确保文件路径在项目目录内
+            if (!fullPath.startsWith(rootDirResolved)) {
+                console.error(`安全错误：尝试访问项目目录外的文件: ${fullPath}`);
+                return res.status(400).json({ error: '无效的文件路径' });
+            }
+            
+            try {
+                await fs.access(fullPath);
+                res.sendFile(fullPath);
+            } catch {
+                console.error(`轮播图文件不存在: ${fullPath}`);
+                res.status(404).json({ error: '图片文件不存在' });
+            }
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        console.error('获取轮播图图片失败:', error);
+        res.status(500).json({ error: '获取图片失败: ' + error.message });
+    }
+});
+
+// 更新轮播图
+app.put('/api/carousel/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, linkUrl, sortOrder, isActive } = req.body;
+
+        const updates = [];
+        const values = [];
+        let paramIndex = 1;
+
+        if (title !== undefined) {
+            updates.push(`title = ${paramIndex}`);
+            values.push(title || '');
+            paramIndex++;
+        }
+        if (linkUrl !== undefined) {
+            updates.push(`link_url = ${paramIndex}`);
+            values.push(linkUrl || '');
+            paramIndex++;
+        }
+        if (sortOrder !== undefined) {
+            updates.push(`sort_order = ${paramIndex}`);
+            values.push(parseInt(sortOrder) || 0);
+            paramIndex++;
+        }
+        if (isActive !== undefined) {
+            updates.push(`is_active = ${paramIndex}`);
+            values.push(isActive);
+            paramIndex++;
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ error: '没有提供更新内容' });
+        }
+
+        values.push(id);
+        const query = `UPDATE carousel_images SET ${updates.join(', ')} WHERE id = ${paramIndex}`;
+
+        const client = await pgPool.connect();
+        await client.query(query, values);
+        client.release();
+        res.json({ success: true, message: '轮播图更新成功' });
+    } catch (error) {
+        console.error('更新轮播图失败:', error);
+        res.status(500).json({ error: '更新轮播图失败: ' + error.message });
+    }
+});
+
+// 删除轮播图
+app.delete('/api/carousel/:id', authenticateToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // 先获取图片路径以便删除文件
+        const client = await pgPool.connect();
+        const result = await client.query(
+            'SELECT image_path FROM carousel_images WHERE id = $1',
+            [id]
+        );
+
+        if (result.rows.length > 0) {
+            // 删除文件
+            const imagePath = result.rows[0].image_path;
+            try {
+                await fs.access(imagePath);
+                await fs.unlink(imagePath);
+            } catch (accessError) {
+                // 文件可能已经不存在，记录但不报错
+                console.log(`文件不存在或无法删除: ${imagePath}`, accessError.message);
+            }
+        }
+
+        // 删除数据库记录
+        await client.query('DELETE FROM carousel_images WHERE id = $1', [id]);
+        client.release();
+        res.json({ success: true, message: '轮播图删除成功' });
+    } catch (error) {
+        console.error('删除轮播图失败:', error);
+        res.status(500).json({ error: '删除轮播图失败' });
+    }
+});
+
+
+
 
 // --- 🆕 新增：带搜索功能的漫画获取API ---
 app.get('/api/manga/search', async (req, res) => {
@@ -1685,6 +1964,7 @@ app.delete('/api/manga/:mangaId/tags/:tagId', requireAuth, async (req, res) => {
 async function startServer() {
     await createDirectories();
     await initializeTagSystem(); // 初始化标签系统
+    await initializeCarouselTable(); // 初始化轮播图表
     app.listen(port, () => {
         console.log(`🚀 服务器运行在 http://localhost:${port}`);
         console.log(`🔐 管理员密码: ${ADMIN_PASSWORD}`);
@@ -1696,4 +1976,4 @@ async function startServer() {
     });
 }
 
-startServer();
+startServer()
