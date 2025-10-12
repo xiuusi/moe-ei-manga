@@ -24,6 +24,137 @@ body {
 }
 
 /* ====================================
+ *   轮播图 (Carousel)
+ *   ==================================== */
+.carousel-section {
+    background-color: #f5f5f5;
+    padding: 50px 0 0;
+    position: relative;
+    z-index: 9;
+}
+
+.carousel-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    position: relative;
+}
+
+.carousel-wrapper {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.15);
+    height: 400px;
+    background: #fff;
+}
+
+.carousel {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.5s ease-in-out;
+}
+
+.carousel-item {
+    min-width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.carousel-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.carousel-item-content {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.8));
+    color: white;
+    padding: 40px 30px 20px;
+    transition: opacity 0.3s ease;
+}
+
+.carousel-item-content h3 {
+    font-size: 1.5rem;
+    margin: 0 0 10px 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.carousel-item-content p {
+    font-size: 0.9rem;
+    margin: 0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+    opacity: 0.9;
+}
+
+.carousel-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(255, 255, 255, 0.7);
+    border: none;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.carousel-btn:hover {
+    background: rgba(255, 255, 255, 0.9);
+    transform: translateY(-50%) scale(1.1);
+}
+
+.prev-btn {
+    left: 20px;
+}
+
+.next-btn {
+    right: 20px;
+}
+
+.carousel-indicators {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 10;
+}
+
+.carousel-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.carousel-indicator.active {
+    background: white;
+    transform: scale(1.2);
+}
+
+/* 隐藏默认按钮，仅用于大屏幕 */
+@media (max-width: 768px) {
+    .carousel-btn {
+        display: none;
+    }
+}
+
+/* ====================================
  *   页头 (Header)
  *   ==================================== */
 .header {

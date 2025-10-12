@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>漫画阅读器 | MangaReader</title>
+    <title>漫画阅读器 | 网站名称</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: 'Microsoft YaHei', Arial, sans-serif; background-color: #1a1a1a; color: #fff; overflow: hidden; height: 100vh; touch-action: manipulation; overscroll-behavior: none; }
@@ -248,7 +248,7 @@
                     });
                 }
                 readerState.chapterId = targetChapter.id;
-                document.getElementById('chapterTitle').textContent = `第${targetChapter.number}话: ${targetChapter.title}`;
+                document.getElementById('chapterTitle').textContent = targetChapter.title;
 
                 await loadChapterData(targetChapter.id);
                 showLoading(false);
@@ -969,7 +969,7 @@ readerState.currentPage = initialPage;
                     await showChapterTransition(`第${nextChapter.number}话: ${nextChapter.title}`);
                 }
                 readerState.chapterId = nextChapter.id;
-                document.getElementById('chapterTitle').textContent = `第${nextChapter.number}话: ${nextChapter.title}`;
+                document.getElementById('chapterTitle').textContent = nextChapter.title;
                 readerState.currentPage = 0;
                 await loadChapterData(nextChapter.id);
                 if (readerState.readingMode === 'scroll') {
@@ -1049,6 +1049,5 @@ readerState.currentPage = initialPage;
             }
         }
     </script>
-<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"63f3b830c4a8439896885448af2cfd72","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>

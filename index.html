@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
+    <title>网站名称</title>
     <!-- 引入外部样式表 -->
     <link rel="stylesheet" href="/style.css">
        <style>
@@ -202,6 +202,39 @@
         }
         #searchInput:focus + .search-icon {
             color: #ff6b6b;
+        }
+        
+        /* 搜索类型选择器样式 */
+        .search-type-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .search-type-option {
+            display: inline-flex;
+            align-items: center;
+            padding: 8px 15px;
+            background-color: #e0e0e0;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+        
+        .search-type-option:hover {
+            background-color: #d0d0d0;
+        }
+        
+        .search-type-option input[type="radio"] {
+            margin-right: 6px;
+            cursor: pointer;
+        }
+        
+        .search-type-option input[type="radio"]:checked + span,
+        .search-type-option:has(input[type="radio"]:checked) {
+            background-color: #ff6b6b;
+            color: white;
         }
 
         /* ===== 结果区域 ===== */
@@ -481,7 +514,7 @@
     <header class="header">
         <div class="container">
             <div class="header-content">
-                <div class="logo"></div>
+                <div class="logo">网站Logo</div>
                 <ul class="nav-menu" id="navMenu">
                     <li><a href="#" class="active" data-page="home">首页</a></li>
                     <li><a href="#" data-page="search">搜索</a></li>
@@ -529,11 +562,24 @@
         <div id="search-page" class="page">
             <!-- 沉浸式搜索英雄区 -->
             <div class="search-hero">
-                <h1>✨ 搜本站</h1>
+                <h1>✨ 搜索网站</h1>
                 <p></p>
                 <div class="search-box-large">
                     <input type="text" id="searchInput" placeholder="输入关键词，或作者" />
                     <span class="search-icon">🔍</span>
+                </div>
+                
+                <!-- 搜索类型选择 -->
+                <div class="search-type-selector" style="margin-top: 15px; display: flex; justify-content: center; gap: 10px;">
+                    <label class="search-type-option">
+                        <input type="radio" name="searchType" value="title" checked> 标题
+                    </label>
+                    <label class="search-type-option">
+                        <input type="radio" name="searchType" value="author"> 作者
+                    </label>
+                    <label class="search-type-option">
+                        <input type="radio" name="searchType" value="tag"> 标签
+                    </label>
                 </div>
             </div>
 
@@ -541,11 +587,10 @@
             <main class="content-section" id="resultsSection">
                 <div class="container">
                     <h2 class="section-title">搜索结果</h2>
-                    <div class="manga-scroll-container">
-                        <div class="manga-grid horizontal" id="searchResultsContainer">
-                            <div class="loading">请输入关键词并按回车开始搜索...</div>
-                        </div>
+                    <div class="manga-grid" id="searchResultsContainer">
+                        <div class="loading">请输入关键词并按回车开始搜索...</div>
                     </div>
+                    <div id="searchPagination" class="pagination"></div>
                 </div>
             </main>
         </div>
@@ -571,8 +616,8 @@
     <!-- 这是全站唯一的页脚，CSS已确保其位置正确 -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2025 使用各种ai杂交制作的漫画网站，仅供于学习交流</p>
-            <p>联系邮箱：</p>
+            <p>&copy; 2025 网站名称 - 网站描述</p>
+            <p>联系邮箱：your-email@example.com</p>
             <p><a href="/login.html" class="admin-link">管理后台</a></p>
         </div>
     </footer>
@@ -784,7 +829,7 @@
             // ================= 3. 修复：使用正确的 pagination ID =================
             const paginationContainer = document.getElementById('homePagination');
 
-            if (mangaData.length === 0) {
+            if (!mangaData || mangaData.length === 0) {
                 container.innerHTML = '<div class="no-manga">暂无内容</div>';
                 paginationContainer.innerHTML = '';
                 mainSection.classList.add('active');
@@ -861,6 +906,10 @@
         }
 
         // =================== 搜索功能 ===================
+        let currentSearchPage = 1;
+        let totalSearchPages = 1;
+        const SEARCH_PER_PAGE = MANGA_PER_PAGE;
+
         function renderSearchMangaCard(manga) {
             const mangaCard = document.createElement('div');
             mangaCard.className = 'manga-card';
@@ -874,11 +923,15 @@
             return mangaCard;
         }
 
-        async function performSearch(query) {
+        async function performSearch(query, page = 1) {
             const container = document.getElementById('searchResultsContainer');
             const resultsSection = document.getElementById('resultsSection');
+            const paginationContainer = document.getElementById('searchPagination');
+            
+            // 显示加载状态
             container.innerHTML = '<div class="loading">正在为你寻找宝藏漫画...</div>';
-
+            paginationContainer.innerHTML = '';
+            
             if (!query.trim()) {
                 container.innerHTML = `<div class="loading">请输入关键词并按回车开始搜索...</div>`;
                 resultsSection.classList.remove('active');
@@ -886,16 +939,36 @@
             }
 
             try {
-                const response = await fetch(`/api/manga/search?q=${encodeURIComponent(query)}`);
+                // 获取搜索类型
+                const searchType = document.querySelector('input[name="searchType"]:checked').value;
+                const params = new URLSearchParams({ q: query, page: page, limit: SEARCH_PER_PAGE, searchType });
+                const response = await fetch(`/api/manga/search?${params.toString()}`);
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                const results = await response.json();
+                const { data, total } = await response.json();
 
                 setTimeout(() => {
                     container.innerHTML = '';
-                    if (results.length === 0) {
+                    if (!data || data.length === 0) {
                         container.innerHTML = `<div class="no-manga"><p>🌌 宇宙中暂时没有发现你要找的漫画</p><p style="margin-top: 10px; font-size: 16px;">换个关键词试试吧！</p></div>`;
+                        paginationContainer.innerHTML = '';
                     } else {
-                        results.forEach(manga => container.appendChild(renderSearchMangaCard(manga)));
+                        data.forEach((manga, index) => {
+                            const card = renderSearchMangaCard(manga);
+                            // 为搜索结果卡片添加动画延迟
+                            card.style.animationDelay = `${index * 0.1}s`;
+                            container.appendChild(card);
+                        });
+                        // 添加分页
+                        totalSearchPages = Math.ceil(total / SEARCH_PER_PAGE);
+                        currentSearchQuery = query;
+                        currentSearchPage = page;
+                        
+                        // 添加与首页相同的网格动画效果
+                        container.classList.remove('loaded'); // 重置动画
+                        void container.offsetWidth; // 强制重排
+                        container.classList.add('loaded'); // 触发动画
+                        
+                        renderSearchPagination(total, page);
                     }
                     resultsSection.classList.add('active');
                 }, 400);
@@ -903,9 +976,42 @@
                 console.error('搜索失败:', error);
                 setTimeout(() => {
                     container.innerHTML = `<div class="no-manga"><p>⚠️ 探索飞船遇到一点小故障</p><p style="margin-top: 10px; font-size: 16px;">请稍后再试。错误: ${error.message}</p></div>`;
+                    paginationContainer.innerHTML = '';
                     resultsSection.classList.add('active');
                 }, 400);
             }
+        }
+
+        function renderSearchPagination(totalItems, currentPage) {
+            const paginationContainer = document.getElementById('searchPagination');
+            paginationContainer.innerHTML = '';
+            const totalPages = Math.ceil(totalItems / SEARCH_PER_PAGE);
+            if (totalPages <= 1) return;
+            
+            const maxVisible = window.innerWidth < 480 ? 3 : 7;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisible - 1);
+            if (endPage - startPage + 1 < maxVisible) startPage = Math.max(1, endPage - maxVisible + 1);
+
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '‹';
+            prevButton.disabled = currentPage === 1;
+            prevButton.onclick = () => performSearch(currentSearchQuery, currentPage - 1);
+            paginationContainer.appendChild(prevButton);
+
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = document.createElement('button');
+                btn.textContent = i;
+                if (i === currentPage) btn.classList.add('active');
+                btn.onclick = () => performSearch(currentSearchQuery, i);
+                paginationContainer.appendChild(btn);
+            }
+
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '›';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.onclick = () => performSearch(currentSearchQuery, currentPage + 1);
+            paginationContainer.appendChild(nextButton);
         }
 
         // =================== 标签功能 (已修复) ===================
@@ -968,14 +1074,18 @@
             currentTagPage = pageNumber;
             grid.innerHTML = '';
 
-            if (mangaData.length === 0) {
+            if (!mangaData || mangaData.length === 0) {
                 grid.innerHTML = '<div class="no-manga">暂无相关漫画</div>';
                 paginationContainer.innerHTML = '';
+                section.classList.add('active'); // 确保section是激活的
                 return;
             }
 
             mangaData.forEach((manga, index) => grid.appendChild(renderTagMangaCard(manga, index)));
-            setTimeout(() => { grid.classList.add('loaded'); }, 100);
+            // 添加与首页相同的动画类
+            grid.classList.remove('loaded'); // 重置动画状态
+            void grid.offsetWidth; // 强制重排
+            grid.classList.add('loaded'); // 触发动画
             if (!section.classList.contains('active')) section.classList.add('active');
             renderTagPagination();
         }
@@ -1093,8 +1203,13 @@
                     document.getElementById('searchInput').value = initialQuery;
                     performSearch(initialQuery);
                 }
-            } else if (pageName === 'tags' && allNamespaces.length === 0) {
-                loadTagData();
+            } else if (pageName === 'tags') {
+                if (allNamespaces.length === 0) {
+                    loadTagData();
+                } else {
+                    // 如果标签数据已加载，确保页面激活
+                    document.getElementById('tagsResultsSection').classList.add('active');
+                }
             }
         }
 
@@ -1113,12 +1228,34 @@
                 });
             });
 
+            // 为搜索类型选项添加点击事件监听器
+            const searchTypeOptions = document.querySelectorAll('input[name="searchType"]');
+            searchTypeOptions.forEach(option => {
+                option.addEventListener('change', function() {
+                    // 当搜索类型改变时，如果当前在搜索页面且有搜索查询，则重新执行搜索
+                    if (document.getElementById('search-page').classList.contains('active') && 
+                        currentSearchQuery && currentSearchQuery.trim() !== '') {
+                        performSearch(currentSearchQuery, 1);
+                    }
+                });
+            });
+            
             const searchInput = document.getElementById('searchInput');
             searchInput.addEventListener('keypress', function(e) {
-                if (e.key === 'Enter') performSearch(searchInput.value);
+                if (e.key === 'Enter') performSearch(searchInput.value, 1); // 重置到第一页
             });
+            
+            // 检查URL参数并切换到相应页面
+            const urlParams = new URLSearchParams(window.location.search);
+            const pageParam = urlParams.get('page');
+            if (pageParam === 'search' || pageParam === 'tag') {
+                if (pageParam === 'tag') {
+                    switchPage('tags');  // 在switchPage函数中使用'tags'（复数形式）
+                } else {
+                    switchPage(pageParam);
+                }
+            }
         });
     </script>
 </body>
 </html>
-

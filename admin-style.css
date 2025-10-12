@@ -536,6 +536,57 @@ tr:hover {
     transform: translateY(-1px);
 }
 
+/* 轮播图管理样式 */
+.form-section {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+}
+
+.form-section h3 {
+    font-size: 18px;
+    color: #2c3e50;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #3498db;
+    padding-bottom: 8px;
+}
+
+.status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* 轮播图预览图片样式 */
+table img {
+    border-radius: 4px;
+}
+
+/* 轮播图管理表单特殊样式 */
+#carouselUploadForm .form-group {
+    margin-bottom: 15px;
+}
+
+#carouselUploadForm .btn {
+    margin-right: 10px;
+    margin-bottom: 5px;
+}
+
 @media (max-width: 768px) {
     .admin-container {
         flex-direction: column;

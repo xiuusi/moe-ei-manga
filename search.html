@@ -1,0 +1,483 @@
+<!-- search 副本.html -->
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>网站名称 - 搜索</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) translateX(0px); }
+            50% { transform: translateY(-20px) translateX(10px); }
+        }
+
+        .header {
+            background-color: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 15px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+        .nav-menu {
+            display: flex;
+            list-style: none;
+            gap: 30px;
+        }
+        .nav-menu a {
+            text-decoration: none;
+            color: #666;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+        .nav-menu a:hover {
+            color: #ff6b6b;
+            }
+
+        /* ===== 全新搜索英雄区 ===== */
+        .search-hero {
+            padding: 80px 20px 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        .search-hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+            pointer-events: none;
+        }
+        .search-hero h1 {
+            color: white;
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 10px rgba(11,4,4,0.77);
+            opacity: 0;
+            animation: fadeInTitle 1s ease-out forwards 0.3s;
+        }
+        .search-hero p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            margin-bottom: 40px;
+            opacity: 0;
+            animation: fadeInTitle 1s ease-out forwards 0.6s;
+        }
+        @keyframes fadeInTitle {
+            to { opacity: 1; }
+        }
+
+        .search-box-large {
+            max-width: 650px;
+            margin: 0 auto;
+            position: relative;
+            opacity: 0;
+            animation: slideUpBox 0.8s ease-out forwards 0.9s;
+        }
+        @keyframes slideUpBox {
+            to { opacity: 1; transform: translateY(0); }
+        }
+        #searchInput {
+            width: 100%;
+            padding: 20px 60px 20px 25px;
+            border: none;
+            border-radius: 50px;
+            font-size: 18px;
+            outline: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(255, 255, 255, 0.95);
+            font-weight: 500;
+            color: #333;
+            position: relative;
+            z-index: 2;
+        }
+        #searchInput:focus {
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3), 0 0 0 3px rgba(255, 107, 107, 0.3);
+            transform: translateY(-2px);
+        }
+        /* 搜索图标 */
+        .search-icon {
+            position: absolute;
+            right: 25px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #aaa;
+            font-size: 20px;
+            transition: color 0.3s;
+            pointer-events: none;
+        }
+        #searchInput:focus + .search-icon {
+            color: #ff6b6b;
+        }
+
+        /* ===== 结果区域 ===== */
+        .content-section {
+            background-color: #f5f5f5;
+            padding: 50px 0 80px;
+            flex: 1;
+            border-top-left-radius: 40px;
+            border-top-right-radius: 40px;
+            margin-top: -40px;
+            position: relative;
+            z-index: 10;
+            opacity: 0;
+            transform: translateY(50px);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .content-section.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: #333;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .content-section.active .section-title {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ===== 漫画卡片样式 (继承主页) ===== */
+        .manga-scroll-container {
+            overflow-x: auto;
+            padding: 10px 0;
+            scrollbar-width: thin;
+            scrollbar-color: #ff6b6b #f5f5f5;
+        }
+        .manga-scroll-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .manga-scroll-container::-webkit-scrollbar-track {
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .manga-scroll-container::-webkit-scrollbar-thumb {
+            background-color: #ff6b6b;
+            border-radius: 4px;
+        }
+        .manga-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 25px;
+        }
+        .manga-grid.horizontal {
+            display: flex;
+            gap: 20px;
+            padding: 10px 0;
+            align-items: flex-start;
+        }
+        .manga-grid.horizontal .manga-card {
+            flex: 0 0 auto;
+            width: clamp(150px, 25vw, 250px);
+        }
+        .manga-card {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+        }
+        .content-section.active .manga-card {
+            animation: cardPopIn 0.5s ease forwards;
+        }
+        .manga-card:hover {
+            transform: translateY(-8px) scale(1.02) !important;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+        }
+        @keyframes cardPopIn {
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        /* 为卡片添加延迟，实现瀑布流效果 */
+        .content-section.active .manga-card:nth-child(1) { animation-delay: 0.1s; }
+        .content-section.active .manga-card:nth-child(2) { animation-delay: 0.2s; }
+        .content-section.active .manga-card:nth-child(3) { animation-delay: 0.3s; }
+        .content-section.active .manga-card:nth-child(4) { animation-delay: 0.4s; }
+        .content-section.active .manga-card:nth-child(5) { animation-delay: 0.5s; }
+        .content-section.active .manga-card:nth-child(6) { animation-delay: 0.6s; }
+        .content-section.active .manga-card:nth-child(7) { animation-delay: 0.7s; }
+        .content-section.active .manga-card:nth-child(8) { animation-delay: 0.8s; }
+        .content-section.active .manga-card:nth-child(9) { animation-delay: 0.9s; }
+        .content-section.active .manga-card:nth-child(10) { animation-delay: 1.0s; }
+
+        .manga-cover {
+            width: 100%;
+            aspect-ratio: 2/3;
+            object-fit: cover;
+            flex-shrink: 0;
+        }
+        .manga-info {
+            padding: 15px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 80px;
+        }
+        .manga-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+            flex-grow: 1;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            line-height: 1.4;
+        }
+        .manga-author {
+            color: #666;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .footer {
+            background-color: #333;
+            color: white;
+            text-align: center;
+            padding: 30px 0 20px;
+        }
+        .footer p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .no-manga, .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+            font-size: 18px;
+            opacity: 0;
+            animation: fadeInText 0.6s ease forwards;
+        }
+        @keyframes fadeInText {
+            to { opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .search-hero {
+                padding: 60px 20px 40px;
+            }
+            .search-hero h1 {
+                font-size: 2.2rem;
+            }
+            #searchInput {
+                padding: 18px 50px 18px 20px;
+                font-size: 16px;
+            }
+            .content-section {
+                padding: 40px 0 60px;
+                border-top-left-radius: 30px;
+                border-top-right-radius: 30px;
+                margin-top: -30px;
+            }
+            .manga-grid {
+                grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 头部导航 -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">网站Logo</div>
+                <ul class="nav-menu">
+                    <li><a href="/">首页</a></li>
+                    <li><a href="/search.html">搜索</a></li>
+                    <li><a href="/tag.html">标签</a></li>
+                </ul>
+            </div>
+        </div>
+    </header>
+
+    <!-- 沉浸式搜索英雄区 -->
+    <div class="search-hero">
+        <h1>✨ 搜索网站</h1>
+        <p></p>
+        <div class="search-box-large">
+            <input type="text" id="searchInput" placeholder="输入关键词，或作者" autofocus />
+            <span class="search-icon">🔍</span>
+        </div>
+    </div>
+
+    <!-- 搜索结果区域 (初始隐藏) -->
+    <main class="content-section" id="resultsSection">
+        <div class="container">
+            <h2 class="section-title">搜索结果</h2>
+            <div class="manga-scroll-container">
+                <div class="manga-grid horizontal" id="searchResultsContainer">
+                    <div class="loading">请输入关键词并按回车开始搜索...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 页脚 -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 网站名称 - 网站描述</p>
+            <p>联系邮箱：your-email@example.com</p>
+        </div>
+    </footer>
+
+    <script>
+
+
+        // 渲染单个漫画卡片的函数
+        function renderMangaCard(manga) {
+            const mangaCard = document.createElement('div');
+            mangaCard.className = 'manga-card';
+            mangaCard.onclick = () => {
+                window.location.href = `/manga-detail.html?id=${manga.id}`;
+            };
+            mangaCard.innerHTML = `
+                <img src="/api/manga/${manga.id}/cover" alt="${manga.title}" class="manga-cover" onerror="this.src='https://placehold.co/200x300/eee/999?text=封面'">
+                <div class="manga-info">
+                    <div class="manga-title">${manga.title}</div>
+                    <div class="manga-author">${manga.author}</div>
+                </div>
+            `;
+            return mangaCard;
+        }
+
+        // 执行搜索的函数
+        async function performSearch(query) {
+            const container = document.getElementById('searchResultsContainer');
+            const resultsSection = document.getElementById('resultsSection');
+
+            container.innerHTML = '<div class="loading">正在为你寻找宝藏漫画...</div>';
+
+            if (!query.trim()) {
+                container.innerHTML = `<div class="loading">请输入关键词并按回车开始搜索...</div>`;
+                resultsSection.classList.remove('active');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/manga/search?q=${encodeURIComponent(query)}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const results = await response.json();
+
+                setTimeout(() => {
+                    container.innerHTML = '';
+
+                    if (results.length === 0) {
+                        const noResultDiv = document.createElement('div');
+                        noResultDiv.className = 'no-manga';
+                        noResultDiv.innerHTML = `
+                            <p>🌌 宇宙中暂时没有发现你要找的漫画</p>
+                            <p style="margin-top: 10px; font-size: 16px;">换个关键词试试吧！</p>
+                        `;
+                        container.appendChild(noResultDiv);
+                        resultsSection.classList.add('active');
+                        return;
+                    }
+
+                    // 激活结果区域，触发动画
+                    resultsSection.classList.add('active');
+
+                    // 渲染所有搜索结果
+                    results.forEach(manga => {
+                        const card = renderMangaCard(manga);
+                        container.appendChild(card);
+                    });
+                }, 400);
+            } catch (error) {
+                console.error('搜索失败:', error);
+                setTimeout(() => {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'no-manga';
+                    errorDiv.innerHTML = `
+                        <p>⚠️ 探索飞船遇到一点小故障</p>
+                        <p style="margin-top: 10px; font-size: 16px;">请稍后再试。错误: ${error.message}</p>
+                    `;
+                    container.appendChild(errorDiv);
+                    resultsSection.classList.add('active');
+                }, 400);
+            }
+        }
+
+
+            const searchInput = document.getElementById('searchInput');
+
+            // 绑定回车键事件
+            searchInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performSearch(searchInput.value);
+                }
+            });
+
+            // 从URL参数读取搜索词
+            const urlParams = new URLSearchParams(window.location.search);
+            const initialQuery = urlParams.get('q');
+            if (initialQuery) {
+                searchInput.value = initialQuery;
+                performSearch(initialQuery);
+            }
+    </script>
+</body>
+</html>

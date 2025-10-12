@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title id="pageTitle">漫画详情 | MangaReader</title>
+    <title id="pageTitle">漫画详情 | 网站名称</title>
     <link rel="stylesheet" href="style.css">
     <style>
         /* 标签样式 */
@@ -87,17 +87,257 @@
             border-color: #e0e0e0;
             color: #757575;
         }
+
+        .tag-item {
+            cursor: pointer;
+        }
+        
+        .tag-item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 标签详情区域样式 */
+        .tag-detail-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+
+        .tag-detail-header {
+            margin-bottom: 15px;
+        }
+
+        .tag-detail-header h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .tag-detail-header p {
+            margin: 0;
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .tag-manga-list h4 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+        }
+
+        #tagMangaGrid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+
+        .tag-manga-card {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+        }
+
+        .tag-manga-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        }
+
+        .tag-manga-cover {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        .tag-manga-info {
+            padding: 10px;
+        }
+
+        .tag-manga-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 5px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tag-manga-author {
+            font-size: 12px;
+            color: #666;
+            margin: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* 加载状态样式 */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .error {
+            text-align: center;
+            padding: 40px;
+            color: #d32f2f;
+            font-size: 16px;
+        }
+
+        .no-manga {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+            font-size: 16px;
+        }
+
+        /* 分页样式 */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .pagination-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background-color: white;
+            color: #333;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .pagination-btn:hover:not(.active) {
+            background-color: #f0f0f0;
+            border-color: #999;
+        }
+
+        .pagination-btn.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .close-btn:hover {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        /* 新增页面过渡动画 */
+        /* 主内容容器动画 */
+        .manga-detail-content {
+            opacity: 1; /* 默认是可见的 */
+            transform: translateY(0); /* 默认位置 */
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        /* 当页面刚开始加载时，添加一个类来实现进入动画 */
+        .manga-detail-content.loading {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .manga-detail-content.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 标签详情区域动画 */
+        .tag-detail-section {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.4s ease, transform 0.4s ease, visibility 0.4s ease;
+            visibility: hidden;
+        }
+
+        .tag-detail-section.show {
+            opacity: 1;
+            transform: translateY(0);
+            visibility: visible;
+        }
+
+        /* 标签相关漫画卡片动画 */
+        .tag-manga-card {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .tag-manga-card.animate {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 章节卡片动画 */
+        .chapter-card {
+            opacity: 0;
+            transform: translateY(15px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        .chapter-card.loaded {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 渐进式动画延迟 */
+        .chapter-card:nth-child(1) { transition-delay: 0.05s; }
+        .chapter-card:nth-child(2) { transition-delay: 0.1s; }
+        .chapter-card:nth-child(3) { transition-delay: 0.15s; }
+        .chapter-card:nth-child(4) { transition-delay: 0.2s; }
+        .chapter-card:nth-child(5) { transition-delay: 0.25s; }
+        .chapter-card:nth-child(6) { transition-delay: 0.3s; }
+        .chapter-card:nth-child(7) { transition-delay: 0.35s; }
+        .chapter-card:nth-child(8) { transition-delay: 0.4s; }
+        .chapter-card:nth-child(9) { transition-delay: 0.45s; }
+        .chapter-card:nth-child(10) { transition-delay: 0.5s; }
+        .chapter-card:nth-child(11) { transition-delay: 0.55s; }
+        .chapter-card:nth-child(12) { transition-delay: 0.6s; }
+        .chapter-card:nth-child(13) { transition-delay: 0.65s; }
+        .chapter-card:nth-child(14) { transition-delay: 0.7s; }
+        .chapter-card:nth-child(15) { transition-delay: 0.75s; }
     </style>
 </head>
 <body>
     <header class="header">
         <div class="container">
             <div class="header-content">
-                <div class="logo">hei——！man</div>
+                <div class="logo">网站Logo</div>
                 <ul class="nav-menu">
                     <li><a href="/">首页</a></li>
-                    <li><a href="/search.html">搜索</a></li>
-                    <li><a href="/tag.html">标签</a></li>
+                    <li><a href="/?page=search">搜索</a></li>
+                    <li><a href="/?page=tag">标签</a></li>
                 </ul>
             </div>
         </div>
@@ -135,11 +375,11 @@
     </main>
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2025 使用各种ai杂交制作的漫画网站，仅供学习交流</p>
-            <p>联系邮箱：</p>
+            <p>&copy; 2025 网站名称 - 网站描述</p>
+            <p>联系邮箱：your-email@example.com</p>
         </div>
     </footer>
-    <script>
+    <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
         function getMangaId() {
             const urlParams = new URLSearchParams(window.location.search);
             return urlParams.get('id');
@@ -168,7 +408,7 @@
 
                 const chapters = await chaptersResponse.json();
 
-                document.getElementById('pageTitle').textContent = `${manga.title} | MangaReader`;
+                document.getElementById('pageTitle').textContent = `${manga.title} | 网站名称`;
 
                 renderMangaDetail(manga, chapters);
             } catch (error) {
@@ -267,10 +507,10 @@
                             const tagDescription = tag.description || tag.name;
 
                             return `
-                                <a href="/tag.html?tag=${tag.id}" class="tag-item" title="${tagDescription}">
+                                <div class="tag-item" data-tag-id="${tag.id}" data-tag-name="${tag.name}" data-tag-description="${tagDescription}" data-namespace="${displayName}" title="${tagDescription}">
                                     <span class="tag-namespace">${displayName}:</span>
                                     ${tag.name}
-                                </a>
+                                </div>
                             `;
                         }).join('')}
                     </div>
@@ -282,6 +522,7 @@
 
         function renderMangaDetail(manga, chapters) {
             const content = document.getElementById('mangaDetailContent');
+            content.classList.add('loading'); // 添加loading类以准备动画
 
             chapters.sort((a, b) => a.number - b.number);
 
@@ -317,6 +558,24 @@
                             ${renderTags(manga.tags)}
                         </div>
 
+                        <!-- 标签详情展示区域 -->
+                        <div id="tagDetailSection" class="tag-detail-section" style="display: none;">
+                            <div class="tag-detail-header">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <h3 id="selectedTagName"></h3>
+                                        <p id="selectedTagDescription"></p>
+                                    </div>
+                                    <button id="closeTagDetail" class="close-btn" onclick="closeTagDetail()">×</button>
+                                </div>
+                            </div>
+                            <div class="tag-manga-list">
+                                <h4>相关漫画</h4>
+                                <div id="tagMangaGrid" class="manga-grid"></div>
+                                <div id="tagPagination" class="pagination"></div>
+                            </div>
+                        </div>
+
                         <div class="manga-actions">
                             <button class="read-button" onclick="${buttonAction}">${buttonText}</button>
                         </div>
@@ -338,6 +597,169 @@
                     </div>
                 </div>
             `;
+
+            // 绑定标签点击事件
+            bindTagClickEvents();
+            
+            // 触发动画
+            setTimeout(() => {
+                content.classList.remove('loading'); // 移除loading状态
+                content.classList.add('loaded'); // 添加loaded状态以触发动画
+                
+                // 触发章节卡片动画
+                setTimeout(() => {
+                    const chapterCards = document.querySelectorAll('.chapter-card');
+                    chapterCards.forEach(card => {
+                        card.classList.add('loaded');
+                    });
+                }, 100);
+            }, 50);
+        }
+
+        // 绑定标签点击事件
+        function bindTagClickEvents() {
+            const tagItems = document.querySelectorAll('.tag-item');
+            tagItems.forEach(tagItem => {
+                tagItem.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const tagId = this.getAttribute('data-tag-id');
+                    const tagName = this.getAttribute('data-tag-name');
+                    const tagDescription = this.getAttribute('data-tag-description');
+
+                    showTagDetails(tagId, tagName, tagDescription);
+                });
+            });
+        }
+
+        // 显示标签详情
+        function showTagDetails(tagId, tagName, tagDescription) {
+            document.getElementById('selectedTagName').textContent = tagName;
+            document.getElementById('selectedTagDescription').textContent = tagDescription || `标签: ${tagName}`;
+            
+            const tagDetailSection = document.getElementById('tagDetailSection');
+            tagDetailSection.classList.remove('show'); // 重置动画
+            tagDetailSection.style.display = 'block'; // 确保元素可见
+            // 强制重排
+            void tagDetailSection.offsetWidth;
+            // 触发动画
+            tagDetailSection.classList.add('show');
+
+            // 滚动到标签详情区域
+            document.getElementById('tagDetailSection').scrollIntoView({ behavior: 'smooth' });
+
+            // 加载具有相同标签的漫画
+            loadTagManga(tagId, 1);
+        }
+
+        // 加载具有特定标签的漫画
+        async function loadTagManga(tagId, page) {
+            const mangaGrid = document.getElementById('tagMangaGrid');
+            const paginationContainer = document.getElementById('tagPagination');
+
+            // 显示加载状态
+            mangaGrid.innerHTML = '<div class="loading">加载中...</div>';
+            paginationContainer.innerHTML = '';
+
+            try {
+                const response = await fetch(`/api/manga?tag=${tagId}&page=${page}&limit=12`);
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                const data = await response.json();
+                const mangaList = data.data;
+                const total = data.total;
+
+                renderTagManga(mangaList, total);
+                renderTagPagination(tagId, page, data.totalPages);
+            } catch (error) {
+                console.error('加载标签相关漫画失败:', error);
+                mangaGrid.innerHTML = '<div class="error">加载失败，请稍后重试</div>';
+            }
+        }
+
+        // 渲染标签相关漫画列表
+        function renderTagManga(mangaList, total) {
+            const mangaGrid = document.getElementById('tagMangaGrid');
+            
+            if (!mangaList || mangaList.length === 0) {
+                mangaGrid.innerHTML = '<div class="no-manga">暂无相关漫画</div>';
+                return;
+            }
+
+            const mangaCards = mangaList.map(manga => `
+                <div class="tag-manga-card" onclick="window.location.href='/manga-detail.html?id=${manga.id}'">
+                    <img src="/api/manga/${manga.id}/cover" alt="${manga.title}" class="tag-manga-cover" 
+                         onerror="this.src='https://placehold.co/140x180/eee/999?text=封面'">
+                    <div class="tag-manga-info">
+                        <div class="tag-manga-title" title="${manga.title}">${manga.title}</div>
+                        <div class="tag-manga-author" title="${manga.author}">${manga.author}</div>
+                    </div>
+                </div>
+            `).join('');
+
+            mangaGrid.innerHTML = mangaCards;
+            
+            // 添加动画效果
+            setTimeout(() => {
+                const cards = document.querySelectorAll('#tagMangaGrid .tag-manga-card');
+                cards.forEach((card, index) => {
+                    setTimeout(() => {
+                        card.classList.add('animate');
+                    }, index * 50); // 逐个延迟显示，创建渐进效果
+                });
+            }, 50);
+        }
+
+        // 渲染标签漫画分页
+        function renderTagPagination(tagId, currentPage, totalPages) {
+            const paginationContainer = document.getElementById('tagPagination');
+            
+            if (totalPages <= 1) {
+                paginationContainer.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+
+            // 上一页按钮
+            if (currentPage > 1) {
+                paginationHTML += `<button class="pagination-btn" onclick="loadTagManga('${tagId}', ${currentPage - 1})">‹ 上一页</button>`;
+            }
+
+            // 页码按钮
+            const maxVisible = 5; // 显示的页码数量
+            let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+            let end = Math.min(totalPages, start + maxVisible - 1);
+            if (end - start + 1 < maxVisible) {
+                start = Math.max(1, end - maxVisible + 1);
+            }
+
+            for (let i = start; i <= end; i++) {
+                if (i === currentPage) {
+                    paginationHTML += `<button class="pagination-btn active">${i}</button>`;
+                } else {
+                    paginationHTML += `<button class="pagination-btn" onclick="loadTagManga('${tagId}', ${i})">${i}</button>`;
+                }
+            }
+
+            // 下一页按钮
+            if (currentPage < totalPages) {
+                paginationHTML += `<button class="pagination-btn" onclick="loadTagManga('${tagId}', ${currentPage + 1})">下一页 ›</button>`;
+            }
+
+            paginationContainer.innerHTML = `<div class="pagination-container">${paginationHTML}</div>`;
+        }
+
+        // 关闭标签详情
+        function closeTagDetail() {
+            const tagDetailSection = document.getElementById('tagDetailSection');
+            tagDetailSection.classList.remove('show');
+            
+            // 在过渡结束后隐藏元素
+            setTimeout(() => {
+                if (!tagDetailSection.classList.contains('show')) {
+                    tagDetailSection.style.display = 'none';
+                }
+            }, 400); // 等待动画完成时间
         }
 
         function readManga(mangaId, chapterId, pageNum = 1) {
@@ -354,5 +776,6 @@
             loadMangaDetail();
         });
     </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/vcd15cbe7772f49c399c6a5babf22c1241717689176015" integrity="sha512-ZpsOmlRQV6y907TI0dKBHq9Md29nnaEIPlkf84rnaERnq6zvWvPUqr2ft8M1aS28oN72PdrCzSjY4U6VaAw1EQ==" data-cf-beacon='{"version":"2024.11.0","token":"63f3b830c4a8439896885448af2cfd72","r":1,"server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
 </body>
 </html>

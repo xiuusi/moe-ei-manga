@@ -1,11 +1,10 @@
-admin-dashboard.html
-<!-- admin-dashboard 副本.html -->
+
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>漫画管理后台 | MangaReader</title>
+    <title>漫画管理后台 | 网站名称</title>
     <link rel="stylesheet" href="admin-style.css">
 
 </head>
@@ -13,11 +12,12 @@ admin-dashboard.html
     <!-- 管理后台头部 -->
     <header class="admin-header">
         <div class="admin-container">
-            <div class="admin-logo">📚 MangaReader 管理后台</div>
+            <div class="admin-logo">📚 网站名称 管理后台</div>
             <nav class="admin-nav">
                 <a href="#dashboard" class="active" onclick="switchTab('dashboard', this)">仪表板</a>
                 <a href="#upload" onclick="switchTab('upload', this)">上传漫画</a>
                 <a href="#manga" onclick="switchTab('manga', this)">漫画管理</a>
+                <a href="#carousel" onclick="switchTab('carousel', this)">轮播图管理</a>
                 <a href="#tags" onclick="switchTab('tags', this)">标签管理</a>
                 <a href="#" onclick="logout()">登出</a>
                 <a href="/">返回前台</a>
@@ -183,6 +183,72 @@ admin-dashboard.html
                 </div>
             </div>
         </section>
+        <!-- 轮播图管理 -->
+        <section id="carousel" class="admin-section tab-content">
+            <h2 class="section-title">轮播图管理</h2>
+            <div id="carouselError" class="error-message"></div>
+            
+            <!-- 上传轮播图表单 -->
+            <div class="form-section">
+                <h3>上传新轮播图</h3>
+                <form id="carouselUploadForm">
+                    <div class="form-group">
+                        <label for="carouselTitle">标题</label>
+                        <input type="text" id="carouselTitle" placeholder="输入轮播图标题">
+                    </div>
+                    <div class="form-group">
+                        <label for="carouselLink">链接地址 (可选)</label>
+                        <input type="text" id="carouselLink" placeholder="http://example.com 或 /manga-detail.html?id=123">
+                    </div>
+                    <div class="form-group">
+                        <label for="carouselSortOrder">排序 (数字越小越靠前)</label>
+                        <input type="number" id="carouselSortOrder" value="0" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="carouselImage">轮播图图片</label>
+                        <div class="upload-area" id="carouselUploadArea" onclick="document.getElementById('carouselImage').click()">
+                            <i>📁</i>
+                            <p>点击上传图片 (JPG, PNG, GIF, WebP)</p>
+                            <p>建议尺寸: 1200x400 或更大</p>
+                        </div>
+                        <input type="file" id="carouselImage" name="image" accept="image/*" style="display: none;">
+                        <div id="carouselImageInfo" class="file-info" style="display: none;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="carouselActive" checked> 启用显示
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-success">上传轮播图</button>
+                    <button type="button" class="btn btn-warning" onclick="resetCarouselForm()">重置</button>
+                </form>
+            </div>
+            
+            <!-- 轮播图列表 -->
+            <div class="form-section">
+                <h3>轮播图列表</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th width="80">预览</th>
+                                <th>标题</th>
+                                <th width="150">链接</th>
+                                <th width="100">排序</th>
+                                <th width="80">状态</th>
+                                <th width="150">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="carouselList">
+                            <tr>
+                                <td colspan="6" class="loading">加载中...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+        
         <!-- 标签管理 -->
         <section id="tags" class="admin-section tab-content">
             <h2 class="section-title">标签管理</h2>

@@ -58,6 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
     setupDragAndDrop();
     loadTagNamespaces();
     loadAllTags();
+    setupCarouselEvents();
 
     // 初始化分页
     setTimeout(() => {
@@ -83,6 +84,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 openChapterModal(mangaId, mangaTitle);
             } else if (btn.classList.contains('btn-danger')) {
                 deleteManga(mangaId);
+            }
+        });
+    }
+    
+    // 👇 新增：使用事件委托统一处理轮播图管理页的操作按钮点击事件
+    const carouselListContainer = document.getElementById('carouselList');
+    if (carouselListContainer) {
+        carouselListContainer.addEventListener('click', function(e) {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+
+            const carouselId = btn.dataset.carouselId;
+            if (!carouselId) return;
+
+            if (btn.classList.contains('btn-warning')) {
+                openEditCarouselModal(carouselId);
+            } else if (btn.classList.contains('btn-danger')) {
+                deleteCarousel(carouselId);
             }
         });
     }
@@ -303,6 +322,7 @@ function switchTab(tabId, clickedElement) {
     if (clickedElement) clickedElement.classList.add('active');
     if (tabId === 'dashboard') loadDashboardData();
     if (tabId === 'manga') loadMangaList(currentPage, currentSearch);
+    if (tabId === 'carousel') loadCarouselTab();
     if (tabId === 'tags') loadTagNamespaces();
 }
 
@@ -1321,4 +1341,414 @@ async function assignTagToManga(mangaId, tagId) {
         console.error('添加标签失败:', error);
         showNotification('添加标签失败: ' + error.message, 'error');
     }
+}
+
+// ================ 轮播图管理功能 ================
+
+// 设置轮播图相关事件
+function setupCarouselEvents() {
+    const carouselUploadForm = document.getElementById('carouselUploadForm');
+    if (carouselUploadForm) {
+        carouselUploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            uploadCarousel();
+        });
+    }
+    
+    const carouselImageInput = document.getElementById('carouselImage');
+    if (carouselImageInput) {
+        carouselImageInput.addEventListener('change', function(e) {
+            if (e.target.files[0]) {
+                const file = e.target.files[0];
+                const fileInfo = document.getElementById('carouselImageInfo');
+                if (fileInfo) {
+                    fileInfo.innerHTML = `
+                    <strong>已选择文件：</strong>${file.name}<br>
+                    <strong>文件大小：</strong>${(file.size / (1024 * 1024)).toFixed(2)} MB
+                    `;
+                    fileInfo.style.display = 'block';
+                }
+                hideError('carouselError');
+            }
+        });
+    }
+    
+    const carouselUploadArea = document.getElementById('carouselUploadArea');
+    if (carouselUploadArea) {
+        carouselUploadArea.addEventListener('dragover', e => {
+            e.preventDefault();
+            carouselUploadArea.classList.add('dragover');
+        });
+        carouselUploadArea.addEventListener('dragleave', e => {
+            e.preventDefault();
+            carouselUploadArea.classList.remove('dragover');
+        });
+        carouselUploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                const carouselInput = document.getElementById('carouselImage');
+                if (carouselInput) {
+                    const dt = new DataTransfer();
+                    dt.items.add(files[0]);
+                    carouselInput.files = dt.files;
+                    carouselInput.dispatchEvent(new Event('change'));
+                }
+            } else {
+                showError('carouselError', '请上传 JPG、PNG、GIF 或 WebP 格式的图片文件！');
+                showNotification('文件格式不支持！', 'error');
+            }
+        });
+    }
+}
+
+// 上传轮播图
+async function uploadCarousel() {
+    const title = document.getElementById('carouselTitle').value;
+    const link = document.getElementById('carouselLink').value;
+    const sortOrder = document.getElementById('carouselSortOrder').value;
+    const active = document.getElementById('carouselActive').checked;
+    const imageFile = document.getElementById('carouselImage').files[0];
+
+    if (!imageFile) {
+        showError('carouselError', '请选择图片文件！');
+        showNotification('请选择图片文件！', 'error');
+        return;
+    }
+
+    const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedImageTypes.includes(imageFile.type)) {
+        showError('carouselError', '图片只支持 JPG、PNG、GIF、WebP 格式！');
+        showNotification('图片格式不支持！', 'error');
+        return;
+    }
+
+    if (imageFile.size > 10 * 1024 * 1024) { // 10MB
+        showError('carouselError', '图片大小不能超过 10MB！');
+        showNotification('图片过大！', 'error');
+        return;
+    }
+
+    hideError('carouselError');
+    const uploadBtn = document.querySelector('#carouselUploadForm .btn');
+    if (uploadBtn) uploadBtn.disabled = true;
+
+    try {
+        const formData = new FormData();
+        formData.append('title', title);
+        formData.append('linkUrl', link);
+        formData.append('sortOrder', sortOrder);
+        formData.append('isActive', active);
+        formData.append('image', imageFile);
+
+        const response = await fetch('/api/carousel', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${adminState.sessionId}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification('轮播图上传成功！', 'success');
+            resetCarouselForm();
+            loadCarouselList();
+        } else {
+            const errorMessage = result.error || '上传失败';
+            showError('carouselError', '上传失败: ' + errorMessage);
+            showNotification('上传失败: ' + errorMessage, 'error');
+        }
+    } catch (error) {
+        console.error('上传轮播图失败:', error);
+        // 检查是否是JSON解析错误
+        if (error.message.includes('JSON.parse')) {
+            showError('carouselError', '上传失败: 服务器响应格式错误');
+            showNotification('上传失败: 服务器响应格式错误', 'error');
+        } else {
+            showError('carouselError', '上传失败: ' + error.message);
+            showNotification('上传失败: ' + error.message, 'error');
+        }
+    } finally {
+        if (uploadBtn) uploadBtn.disabled = false;
+    }
+}
+
+// 重置轮播图表单
+function resetCarouselForm() {
+    const form = document.getElementById('carouselUploadForm');
+    if (form) form.reset();
+    document.getElementById('carouselSortOrder').value = '0';
+    document.getElementById('carouselActive').checked = true;
+    
+    const fileInfo = document.getElementById('carouselImageInfo');
+    if (fileInfo) {
+        fileInfo.style.display = 'none';
+        fileInfo.innerHTML = '';
+    }
+    
+    hideError('carouselError');
+}
+
+// 加载轮播图列表
+async function loadCarouselList() {
+    try {
+        const container = document.getElementById('carouselList');
+        if (!container) return;
+        
+        container.innerHTML = '<tr><td colspan="6" class="loading">加载中...</td></tr>';
+
+        const response = await fetch('/api/carousel');
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const carouselData = await response.json();
+
+        if (carouselData.length === 0) {
+            container.innerHTML = '<tr><td colspan="6" class="loading">暂无轮播图数据</td></tr>';
+            return;
+        }
+
+        container.innerHTML = '';
+        carouselData.forEach(item => {
+            const row = document.createElement('tr');
+
+            const isActive = item.is_active ? '启用' : '禁用';
+            const statusClass = item.is_active ? 'status-active' : 'status-inactive';
+            const linkDisplay = item.link_url ? `<a href="${item.link_url}" target="_blank">查看</a>` : '无链接';
+
+            row.innerHTML = `
+            <td>
+                <img src="/api/carousel/${item.id}/image" 
+                     width="60" height="30" 
+                     style="object-fit: cover; border-radius: 4px;"
+                     onerror="this.src='https://placehold.co/60x30/eee/999?text=图片'">
+            </td>
+            <td>
+                <div style="font-weight: bold; margin-bottom: 4px;">${item.title || '无标题'}</div>
+            </td>
+            <td>
+                ${linkDisplay}
+            </td>
+            <td>${item.sort_order || 0}</td>
+            <td><span class="status ${statusClass}">${isActive}</span></td>
+            <td>
+                <div class="admin-action-buttons">
+                    <button class="btn btn-warning" data-carousel-id="${item.id}">编辑</button>
+                    <button class="btn btn-danger" data-carousel-id="${item.id}">删除</button>
+                </div>
+            </td>
+            `;
+            container.appendChild(row);
+        });
+    } catch (error) {
+        console.error('加载轮播图列表失败:', error);
+        const container = document.getElementById('carouselList');
+        if (container) {
+            container.innerHTML = `<tr><td colspan="6" class="loading">加载失败: ${error.message}</td></tr>`;
+        }
+        showNotification('加载轮播图列表失败: ' + error.message, 'error');
+    }
+}
+
+// 编辑轮播图模态框
+function openEditCarouselModal(carouselId) {
+    // 创建编辑模态框的HTML结构（如果没有的话）
+    let modal = document.getElementById('editCarouselModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'editCarouselModal';
+        modal.className = 'modal';
+        modal.innerHTML = `
+        <div class="modal-content">
+            <span class="close" onclick="closeEditCarouselModal()">&times;</span>
+            <h2>编辑轮播图</h2>
+            <input type="hidden" id="editCarouselId">
+            <div class="form-group">
+                <label for="editCarouselTitle">标题</label>
+                <input type="text" id="editCarouselTitle" class="form-control">
+            </div>
+            <div class="form-group">
+                <label for="editCarouselLink">链接地址</label>
+                <input type="text" id="editCarouselLink" class="form-control" placeholder="http://example.com">
+            </div>
+            <div class="form-group">
+                <label for="editCarouselSortOrder">排序</label>
+                <input type="number" id="editCarouselSortOrder" class="form-control" value="0" min="0">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="editCarouselActive"> 启用显示
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="editCarouselImage">新图片 (可选)</label>
+                <input type="file" id="editCarouselImage" class="form-control" accept="image/*">
+                <small>留空则保持原图</small>
+            </div>
+            <div class="form-group">
+                <img id="editCarouselPreview" src="" alt="预览图" style="max-width: 300px; max-height: 200px; object-fit: contain; display: none;">
+            </div>
+            <button class="btn btn-warning" onclick="updateCarousel()">更新轮播图</button>
+        </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // 加载当前轮播图信息并显示模态框
+    fetch(`/api/carousel/${carouselId}`)
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        document.getElementById('editCarouselId').value = data.id;
+        document.getElementById('editCarouselTitle').value = data.title || '';
+        document.getElementById('editCarouselLink').value = data.link_url || '';
+        document.getElementById('editCarouselSortOrder').value = data.sort_order || 0;
+        document.getElementById('editCarouselActive').checked = data.is_active;
+        
+        // 显示当前图片预览
+        const preview = document.getElementById('editCarouselPreview');
+        preview.src = `/api/carousel/${data.id}/image?t=${Date.now()}`; // 添加时间戳避免缓存
+        preview.style.display = 'block';
+        
+        modal.style.display = 'block';
+    })
+    .catch(error => {
+        console.error('加载轮播图信息失败:', error);
+        showNotification('加载轮播图信息失败: ' + error.message, 'error');
+    });
+}
+
+function closeEditCarouselModal() {
+    const modal = document.getElementById('editCarouselModal');
+    if (modal) modal.style.display = 'none';
+}
+
+async function updateCarousel() {
+    const carouselId = document.getElementById('editCarouselId').value;
+    const title = document.getElementById('editCarouselTitle').value;
+    const link = document.getElementById('editCarouselLink').value;
+    const sortOrder = document.getElementById('editCarouselSortOrder').value;
+    const active = document.getElementById('editCarouselActive').checked;
+    const imageFile = document.getElementById('editCarouselImage').files[0];
+
+    try {
+        let response;
+        
+        // 如果有新图片，则一起上传
+        if (imageFile) {
+            const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedImageTypes.includes(imageFile.type)) {
+                showNotification('图片格式不支持！', 'error');
+                return;
+            }
+
+            if (imageFile.size > 10 * 1024 * 1024) { // 10MB
+                showNotification('图片过大！', 'error');
+                return;
+            }
+
+            // 使用multipart/form-data上传图片
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('linkUrl', link);
+            formData.append('sortOrder', sortOrder);
+            formData.append('isActive', active);
+            formData.append('image', imageFile);
+
+            response = await fetch(`/api/carousel/${carouselId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${adminState.sessionId}`
+                },
+                body: formData
+            });
+        } else {
+            // 如果没有新图片，则使用JSON格式更新其他字段
+            const updateData = {
+                title: title,
+                linkUrl: link,
+                sortOrder: sortOrder,
+                isActive: active
+            };
+            
+            response = await fetch(`/api/carousel/${carouselId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${adminState.sessionId}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            });
+        }
+
+        // 检查响应是否成功后再尝试解析JSON
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+
+        if (result.success) {
+            showNotification('轮播图更新成功！', 'success');
+            closeEditCarouselModal();
+            loadCarouselList();
+        } else {
+            const errorMessage = result.error || '更新失败';
+            showNotification('更新失败: ' + errorMessage, 'error');
+        }
+    } catch (error) {
+        console.error('更新轮播图失败:', error);
+        // 如果是JSON解析错误，则从响应文本中获取错误信息
+        try {
+            // 重新请求获取错误信息
+            if (error.message.includes('JSON.parse')) {
+                // 这里直接显示错误信息，因为JSON解析失败意味着服务器可能返回了错误信息而非JSON
+                showNotification('更新失败: 服务器返回错误格式', 'error');
+            } else {
+                showNotification('更新失败: ' + error.message, 'error');
+            }
+        } catch (innerError) {
+            showNotification('更新失败: ' + error.message, 'error');
+        }
+    }
+}
+
+async function deleteCarousel(carouselId) {
+    if (!confirm('确定要删除这个轮播图吗？此操作不可恢复！')) return;
+
+    try {
+        const response = await fetch(`/api/carousel/${carouselId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${adminState.sessionId}`
+            }
+        });
+
+        const result = await response.json();
+        if (response.ok && result.success) {
+            showNotification('轮播图删除成功！', 'success');
+            loadCarouselList();
+        } else {
+            const errorMessage = result.error || '删除失败';
+            showNotification('删除失败: ' + errorMessage, 'error');
+        }
+    } catch (error) {
+        console.error('删除轮播图失败:', error);
+        showNotification('删除失败: ' + error.message, 'error');
+    }
+}
+
+// 为轮播图管理页面添加加载函数
+function loadCarouselTab() {
+    loadCarouselList();
 }

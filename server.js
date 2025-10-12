@@ -240,7 +240,14 @@ app.use(express.static('.'));
 
 // --- 重定向旧页面到新集成页面 ---
 app.get(['/search.html', '/tag.html'], (req, res) => {
-    res.redirect('/');
+    // 重定向到带有参数的首页，以显示相应的标签或搜索页面
+    if (req.path.includes('search')) {
+        res.redirect('/?page=search');
+    } else if (req.path.includes('tag')) {
+        res.redirect('/?page=tag');
+    } else {
+        res.redirect('/');
+    }
 });
 
 // --- 🆕 数据库交互函数 (PostgreSQL) ---
@@ -278,7 +285,7 @@ async function getMangaById(mangaId) {
         const query = `
         SELECT
         m.*,
-        COALESCE(json_agg(c.*) FILTER (WHERE c.id IS NOT NULL), '[]') AS chapters,
+        COALESCE(json_agg(c.* ORDER BY c.number) FILTER (WHERE c.id IS NOT NULL), '[]') AS chapters,
         COALESCE(
             (SELECT json_agg(t.*)
             FROM manga_tags mt
@@ -689,70 +696,135 @@ async function getMangaByTag(tagId) {
 }
 
 // 搜索漫画（支持标签搜索）
-async function searchMangaByTagOrTitle(query) {
+// 搜索漫画（支持标签搜索）
+async function searchMangaByTagOrTitle(query, searchType = 'title') {
     const client = await pgPool.connect();
     try {
         const searchQuery = `%${query}%`;
-        // 修改 searchMangaByTagOrTitle 中的 SQL
-        const result = await client.query(`
-        SELECT
-        m.id,
-        m.title,
-        m.author,
-        m.description,
-        m.cover_path,
-        m.file_path,
-        m.file_name,
-        m.file_size,
-        m.upload_time,
-        COALESCE(json_agg(c.*) FILTER (WHERE c.id IS NOT NULL), '[]') AS chapters,
-                                          COALESCE(
-                                              (SELECT json_agg(t.*)
-                                              FROM manga_tags mt2
-                                              JOIN tags t ON mt2.tag_id = t.id
-                                              WHERE mt2.manga_id = m.id),
-                                              '[]'
-                                          ) AS tags
-                                          FROM mangas m
-                                          LEFT JOIN chapters c ON m.id = c.manga_id
-                                          WHERE m.title ILIKE $1 OR m.author ILIKE $1
-                                          GROUP BY m.id
-
-                                          UNION ALL  -- 👈 改这里！
-
-                                          SELECT
-                                          m2.id,
-                                          m2.title,
-                                          m2.author,
-                                          m2.description,
-                                          m2.cover_path,
-                                          m2.file_path,
-                                          m2.file_name,
-                                          m2.file_size,
-                                          m2.upload_time,
-                                          COALESCE(json_agg(c2.*) FILTER (WHERE c2.id IS NOT NULL), '[]') AS chapters,
-                                          COALESCE(
-                                              (SELECT json_agg(t2.*)
-                                              FROM manga_tags mt3
-                                              JOIN tags t2 ON mt3.tag_id = t2.id
-                                              WHERE mt3.manga_id = m2.id),
-                                              '[]'
-                                          ) AS tags
-                                          FROM mangas m2
-                                          LEFT JOIN chapters c2 ON m2.id = c2.manga_id
-                                          JOIN manga_tags mt ON m2.id = mt.manga_id
-                                          JOIN tags t ON mt.tag_id = t.id
-                                          WHERE t.name ILIKE $1
-                                          GROUP BY m2.id
-
-                                          ORDER BY upload_time DESC
-                                          `, [searchQuery]);
-        return result.rows;
+        
+        if (searchType === 'title') {
+            // 只搜索标题
+            const sqlQuery = `
+                SELECT
+                m.id,
+                m.title,
+                m.author,
+                m.description,
+                m.cover_path,
+                m.file_path,
+                m.file_name,
+                m.file_size,
+                m.upload_time,
+                COALESCE(json_agg(c.*) FILTER (WHERE c.id IS NOT NULL), '[]') AS chapters,
+                COALESCE(
+                    (SELECT json_agg(t.*)
+                    FROM manga_tags mt2
+                    JOIN tags t ON mt2.tag_id = t.id
+                    WHERE mt2.manga_id = m.id),
+                    '[]'
+                ) AS tags
+                FROM mangas m
+                LEFT JOIN chapters c ON m.id = c.manga_id
+                WHERE m.title ILIKE $1
+                GROUP BY m.id
+                ORDER BY m.upload_time DESC
+            `;
+            const result = await client.query(sqlQuery, [searchQuery]);
+            return result.rows;
+        } else if (searchType === 'author') {
+            // 只搜索作者
+            const sqlQuery = `
+                SELECT
+                m.id,
+                m.title,
+                m.author,
+                m.description,
+                m.cover_path,
+                m.file_path,
+                m.file_name,
+                m.file_size,
+                m.upload_time,
+                COALESCE(json_agg(c.*) FILTER (WHERE c.id IS NOT NULL), '[]') AS chapters,
+                COALESCE(
+                    (SELECT json_agg(t.*)
+                    FROM manga_tags mt2
+                    JOIN tags t ON mt2.tag_id = t.id
+                    WHERE mt2.manga_id = m.id),
+                    '[]'
+                ) AS tags
+                FROM mangas m
+                LEFT JOIN chapters c ON m.id = c.manga_id
+                WHERE m.author ILIKE $1
+                GROUP BY m.id
+                ORDER BY m.upload_time DESC
+            `;
+            const result = await client.query(sqlQuery, [searchQuery]);
+            return result.rows;
+        } else if (searchType === 'tag') {
+            // 只搜索标签
+            const sqlQuery = `
+                SELECT
+                m.id,
+                m.title,
+                m.author,
+                m.description,
+                m.cover_path,
+                m.file_path,
+                m.file_name,
+                m.file_size,
+                m.upload_time,
+                COALESCE(json_agg(c.*) FILTER (WHERE c.id IS NOT NULL), '[]') AS chapters,
+                COALESCE(
+                    (SELECT json_agg(t.*)
+                    FROM manga_tags mt2
+                    JOIN tags t ON mt2.tag_id = t.id
+                    WHERE mt2.manga_id = m.id),
+                    '[]'
+                ) AS tags
+                FROM mangas m
+                LEFT JOIN chapters c ON m.id = c.manga_id
+                JOIN manga_tags mt ON m.id = mt.manga_id
+                JOIN tags t ON mt.tag_id = t.id
+                WHERE t.name ILIKE $1
+                GROUP BY m.id
+                ORDER BY m.upload_time DESC
+            `;
+            const result = await client.query(sqlQuery, [searchQuery]);
+            return result.rows;
+        } else {
+            // 默认搜索标题（如果提供了无效的搜索类型）
+            const sqlQuery = `
+                SELECT
+                m.id,
+                m.title,
+                m.author,
+                m.description,
+                m.cover_path,
+                m.file_path,
+                m.file_name,
+                m.file_size,
+                m.upload_time,
+                COALESCE(json_agg(c.*) FILTER (WHERE c.id IS NOT NULL), '[]') AS chapters,
+                COALESCE(
+                    (SELECT json_agg(t.*)
+                    FROM manga_tags mt2
+                    JOIN tags t ON mt2.tag_id = t.id
+                    WHERE mt2.manga_id = m.id),
+                    '[]'
+                ) AS tags
+                FROM mangas m
+                LEFT JOIN chapters c ON m.id = c.manga_id
+                WHERE m.title ILIKE $1
+                GROUP BY m.id
+                ORDER BY m.upload_time DESC
+            `;
+            const result = await client.query(sqlQuery, [searchQuery]);
+            return result.rows;
+        }
     } finally {
         client.release();
     }
 }
-
 // 添加轮播图表
 async function initializeCarouselTable() {
     const client = await pgPool.connect();
@@ -1113,34 +1185,117 @@ app.get('/api/carousel/:id/image', async (req, res) => {
     }
 });
 
+// 获取单个轮播图信息
+app.get('/api/carousel/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // 验证ID是否为有效数字
+        if (!id || isNaN(id) || parseInt(id) <= 0) {
+            return res.status(400).json({ error: '无效的ID参数' });
+        }
+        
+        const client = await pgPool.connect();
+        try {
+            const result = await client.query(
+                'SELECT id, title, link_url, image_path, sort_order, is_active, created_at FROM carousel_images WHERE id = $1',
+                [parseInt(id)]
+            );
+            
+            if (result.rows.length === 0) {
+                return res.status(404).json({ error: '轮播图不存在' });
+            }
+
+            res.json(result.rows[0]);
+        } finally {
+            client.release();
+        }
+    } catch (error) {
+        console.error('获取轮播图信息失败:', error);
+        res.status(500).json({ error: '获取轮播图信息失败: ' + error.message });
+    }
+});
+
 // 更新轮播图
-app.put('/api/carousel/:id', authenticateToken, async (req, res) => {
+app.put('/api/carousel/:id', authenticateToken, upload.single('image'), async (req, res) => {
     try {
         const { id } = req.params;
         const { title, linkUrl, sortOrder, isActive } = req.body;
+
+        // 检查轮播图是否存在
+        const client = await pgPool.connect();
+        let currentCarousel;
+        try {
+            const checkResult = await client.query(
+                'SELECT * FROM carousel_images WHERE id = $1',
+                [parseInt(id)]
+            );
+            
+            if (checkResult.rows.length === 0) {
+                return res.status(404).json({ error: '轮播图不存在' });
+            }
+            currentCarousel = checkResult.rows[0];
+        } finally {
+            client.release();
+        }
+
+        let newImagePath = currentCarousel.image_path;
+
+        // 如果有新图片上传
+        if (req.file) {
+            const allowedImageTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            if (!allowedImageTypes.includes(req.file.mimetype)) {
+                return res.status(400).json({ error: '图片只支持 JPG、PNG、GIF、WebP 格式！' });
+            }
+
+            if (req.file.size > 10 * 1024 * 1024) { // 10MB
+                return res.status(400).json({ error: '图片大小不能超过 10MB！' });
+            }
+
+            // 使用相对路径而不是绝对路径
+            newImagePath = path.relative(rootDir, req.file.path).replace(/\\/g, '/');
+
+            // 删除旧图片文件（如果不是默认图片）
+            if (currentCarousel.image_path && !currentCarousel.image_path.includes('default')) {
+                try {
+                    const oldImagePath = path.resolve(rootDir, currentCarousel.image_path);
+                    await fs.access(oldImagePath);
+                    await fs.unlink(oldImagePath);
+                    console.log(`✅ 旧轮播图图片已删除: ${oldImagePath}`);
+                } catch (accessError) {
+                    console.log(`⚠️ 旧轮播图图片不存在或无法访问: ${currentCarousel.image_path}`);
+                }
+            }
+        }
 
         const updates = [];
         const values = [];
         let paramIndex = 1;
 
         if (title !== undefined) {
-            updates.push(`title = ${paramIndex}`);
+            updates.push(`title = $${paramIndex}`);
             values.push(title || '');
             paramIndex++;
         }
         if (linkUrl !== undefined) {
-            updates.push(`link_url = ${paramIndex}`);
+            updates.push(`link_url = $${paramIndex}`);
             values.push(linkUrl || '');
             paramIndex++;
         }
         if (sortOrder !== undefined) {
-            updates.push(`sort_order = ${paramIndex}`);
+            updates.push(`sort_order = $${paramIndex}`);
             values.push(parseInt(sortOrder) || 0);
             paramIndex++;
         }
         if (isActive !== undefined) {
-            updates.push(`is_active = ${paramIndex}`);
-            values.push(isActive);
+            updates.push(`is_active = $${paramIndex}`);
+            values.push(isActive === 'true' || isActive === true);
+            paramIndex++;
+        }
+        // 如果有新图片，更新图片路径
+        if (req.file) {
+            updates.push(`image_path = $${paramIndex}`);
+            values.push(newImagePath);
             paramIndex++;
         }
 
@@ -1149,12 +1304,15 @@ app.put('/api/carousel/:id', authenticateToken, async (req, res) => {
         }
 
         values.push(id);
-        const query = `UPDATE carousel_images SET ${updates.join(', ')} WHERE id = ${paramIndex}`;
+        const query = `UPDATE carousel_images SET ${updates.join(', ')} WHERE id = $${paramIndex}`;
 
-        const client = await pgPool.connect();
-        await client.query(query, values);
-        client.release();
-        res.json({ success: true, message: '轮播图更新成功' });
+        const updateClient = await pgPool.connect();
+        try {
+            await updateClient.query(query, values);
+            res.json({ success: true, message: '轮播图更新成功' });
+        } finally {
+            updateClient.release();
+        }
     } catch (error) {
         console.error('更新轮播图失败:', error);
         res.status(500).json({ error: '更新轮播图失败: ' + error.message });
@@ -1198,27 +1356,42 @@ app.delete('/api/carousel/:id', authenticateToken, async (req, res) => {
 
 
 
-// --- 🆕 新增：带搜索功能的漫画获取API ---
+// --- 🆕 修复：带搜索功能的漫画获取API，支持分页 ---
 app.get('/api/manga/search', async (req, res) => {
     try {
-        const { q } = req.query; // 从查询参数获取搜索关键词
-        let mangaData;
+        const { q, page = 1, limit = 21, searchType = 'title' } = req.query; // 从查询参数获取搜索关键词、分页参数和搜索类型
+        const pageNum = parseInt(page, 10) || 1;
+        const limitNum = parseInt(limit, 10) || 21;
+        const offset = (pageNum - 1) * limitNum;
+
+        let mangaData = [];
+        let total = 0;
 
         if (q && q.trim() !== '') {
-            // 搜索漫画标题、作者或标签
-            mangaData = await searchMangaByTagOrTitle(q.trim());
+            // 搜索漫画标题、作者或标签，根据搜索类型
+            const allSearchResults = await searchMangaByTagOrTitle(q.trim(), searchType);
+            total = allSearchResults.length;
+            mangaData = allSearchResults.slice(offset, offset + limitNum);
         } else {
-            // 如果没有搜索词，返回所有数据
-            mangaData = await readMangaData();
+            // 如果没有搜索词，返回所有数据（也进行分页）
+            const allManga = await readMangaData();
+            total = allManga.length;
+            mangaData = allManga.slice(offset, offset + limitNum);
         }
 
-        res.json(mangaData);
+        res.json({
+            data: mangaData,
+            total: total,
+            page: pageNum,
+            limit: limitNum,
+            totalPages: Math.ceil(total / limitNum)
+        });
     } catch (error) {
         console.error('搜索漫画失败:', error);
         res.status(500).json({ error: '搜索失败' });
     }
 });
-// --- 🆕 新增结束 ---
+// --- 🆕 修复结束 ---
 
 // 获取单个漫画
 app.get('/api/manga/:id', async (req, res) => {
